@@ -141,7 +141,7 @@
   .sum-pct{font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:700;}
   .sum-sig{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;}
 
-  .io-bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;}
+  .io-bar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;}
   .io-btn{background:none;border:1px solid var(--card-border);border-radius:8px;color:var(--text-dim);font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;}
   .io-btn:hover{border-color:var(--gold);color:var(--gold);}
 </style>
@@ -204,7 +204,7 @@
 
   <div class="notice">
     <b>참고</b><br>
-    · 가격은 60초마다 자동 조회를 시도합니다. CORS 정책으로 실패하면 "자동조회 실패"로 표시되며, 이 경우 카드의 <b>현재가 / 전일가</b> 칸을 직접 입력해주세요.<br>
+    · 가격은 60초마다 자동 조회합니다. <b>KIS API 설정</b> 버튼에서 한국투자 App Key·Secret을 입력하면 실시간 시세를 사용합니다. 미설정 또는 CORS 차단 시 네이버 금융 API로 자동 전환되며, 둘 다 실패하면 <b>현재가 / 전일가</b>를 직접 입력해주세요.<br>
     · <b>매수</b> 적용 시 수량·평균단가가 자동 계산됩니다.<br>
     · <b>매도</b> 적용 시 수량은 차감되고 직전 매도 수익현황이 카드에 표시됩니다.<br>
     · 종목 이름을 클릭하면 직접 수정할 수 있습니다.<br>
@@ -260,18 +260,56 @@ function computeStatus(avg, current, prev){
 }
 const SEG_LABELS=['매우손절','손절','물타기','버티기','수익화가능','상승장','매우상승장'];
 
-// ---------- price fetch ----------
-async function fetchPrice(code){
+// ---------- price fetch (Yahoo Finance → 네이버 폴백) ----------
+// Yahoo Finance: 로그인 불필요, CORS 허용
+// 한국 주식 심볼: 코스피 = {code}.KS, 코스닥 = {code}.KQ
+// 종목 추가 시 시장 구분 자동 감지 후 holding.marketSuffix 에 캐시
+
+async function fetchYahooPrice(code, cachedSuffix){
+  const suffixes = cachedSuffix ? [cachedSuffix] : ['.KS','.KQ'];
+  for(const suffix of suffixes){
+    try{
+      const res = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${code}${suffix}?interval=1d&range=1d`,
+        {headers:{'Accept':'application/json'}}
+      );
+      if(!res.ok) continue;
+      const d = await res.json();
+      const meta = d?.chart?.result?.[0]?.meta;
+      if(!meta) continue;
+      const current = Number(meta.regularMarketPrice);
+      const prev    = Number(meta.chartPreviousClose ?? meta.previousClose);
+      if(!current || !prev) continue;
+      return {current, prev, suffix};
+    }catch(e){ continue; }
+  }
+  return null;
+}
+
+async function fetchNaverPrice(code){
+  const res=await fetch(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code}`);
+  if(!res.ok) throw new Error();
+  const data=await res.json();
+  const d=data?.datas?.[0]; if(!d) throw new Error();
+  const current=Number(d.closePrice??d.now??d.tradePrice);
+  const prev=Number(d.basePrice??d.standardPrice??d.previousClose);
+  if(!current||!prev) throw new Error();
+  return {current,prev};
+}
+
+let _lastSrc='yahoo';
+async function fetchPrice(code, h){
+  // 1차: Yahoo Finance
+  const r = await fetchYahooPrice(code, h?.marketSuffix);
+  if(r){
+    if(h && !h.marketSuffix) h.marketSuffix = r.suffix; // 감지된 시장 캐시
+    _lastSrc='yahoo';
+    return {current:r.current, prev:r.prev};
+  }
+  // 2차 폴백: 네이버 금융
   try{
-    const res=await fetch(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code}`);
-    if(!res.ok) throw new Error();
-    const data=await res.json();
-    const d=data?.datas?.[0];
-    if(!d) throw new Error();
-    const current=Number(d.closePrice??d.now??d.tradePrice);
-    const prev=Number(d.basePrice??d.standardPrice??d.previousClose);
-    if(!current||!prev) throw new Error();
-    return {current,prev};
+    const r2 = await fetchNaverPrice(code);
+    _lastSrc='naver'; return r2;
   }catch(e){ return null; }
 }
 
@@ -280,7 +318,7 @@ async function refreshAll(){
   if(!holdings.length) return;
   let anySuccess=false;
   for(const h of holdings){
-    const r=await fetchPrice(h.code);
+    const r=await fetchPrice(h.code, h);
     if(r){
       h.current=r.current; h.prev=r.prev; h.manual=false; h.lastUpdate=Date.now();
       if(!h.priceHistory) h.priceHistory=[];
@@ -292,14 +330,15 @@ async function refreshAll(){
       anySuccess=true;
     }
   }
-  if(anySuccess){ autoFetchWorked=true; setStatus(true); }
+  if(anySuccess){ autoFetchWorked=true; setStatus(true,_lastSrc); }
   else if(holdings.some(h=>!h.manual)){ autoFetchWorked=false; setStatus(false); }
   saveHoldings(); render();
 }
-function setStatus(ok){
+function setStatus(ok,src){
   document.getElementById('liveDot').className=ok?'dot live':'dot';
+  const label = src==='yahoo' ? 'Yahoo Finance' : '네이버 금융';
   document.getElementById('statusText').textContent=ok
-    ?'자동조회 정상 — 60초마다 갱신 중'
+    ?`${label} — 60초마다 갱신 중`
     :'자동조회 실패 — 현재가/전일가를 직접 입력해주세요';
 }
 
@@ -736,7 +775,58 @@ document.getElementById('importFile').addEventListener('change',e=>{
   reader.readAsText(file);
 });
 
+// ---------- KIS 설정 패널 ----------
+function kisUpdateToggleBtn(){
+  const {appkey} = getKisCreds();
+  const btn = document.getElementById('kisToggleBtn');
+  if(appkey){ btn.classList.add('kis-active'); btn.textContent='⚡ KIS 연결됨'; }
+  else{ btn.classList.remove('kis-active'); btn.textContent='⚡ KIS API 설정'; }
+}
+
+document.getElementById('kisToggleBtn').addEventListener('click',()=>{
+  const panel = document.getElementById('kisPanel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')){
+    const {appkey, appsecret} = getKisCreds();
+    if(appkey) document.getElementById('kisKey').value = appkey;
+    if(appsecret) document.getElementById('kisSecret').value = appsecret;
+  }
+});
+
+document.getElementById('kisSaveBtn').addEventListener('click', async ()=>{
+  const appkey  = document.getElementById('kisKey').value.trim();
+  const appsecret = document.getElementById('kisSecret').value.trim();
+  const msgEl = document.getElementById('kisMsg');
+  if(!appkey||!appsecret){ msgEl.className='kis-msg err'; msgEl.textContent='App Key와 App Secret을 모두 입력해주세요.'; return; }
+  msgEl.className='kis-msg'; msgEl.textContent='토큰 발급 중...';
+  try{
+    _kisToken=null; _kisTokenExp=0;
+    await getKisToken(appkey, appsecret);
+    localStorage.setItem('kisCreds', JSON.stringify({appkey, appsecret}));
+    msgEl.className='kis-msg ok'; msgEl.textContent='✓ 연결 성공 — 토큰 발급 완료';
+    kisUpdateToggleBtn();
+    refreshAll();
+  }catch(e){
+    const isCors = e instanceof TypeError && e.message.includes('fetch');
+    msgEl.className='kis-msg err';
+    msgEl.textContent = isCors
+      ? '✗ CORS 차단 — 브라우저가 직접 호출을 막고 있습니다. 네이버 API로 동작합니다.'
+      : `✗ 실패: ${e.message}`;
+  }
+});
+
+document.getElementById('kisClearBtn').addEventListener('click',()=>{
+  localStorage.removeItem('kisCreds');
+  _kisToken=null; _kisTokenExp=0;
+  document.getElementById('kisKey').value='';
+  document.getElementById('kisSecret').value='';
+  const msgEl=document.getElementById('kisMsg');
+  msgEl.className='kis-msg'; msgEl.textContent='KIS API 설정이 초기화됐습니다.';
+  kisUpdateToggleBtn();
+});
+
 // ---------- init ----------
+kisUpdateToggleBtn();
 loadHoldings();
 refreshAll();
 setInterval(refreshAll,REFRESH_MS);

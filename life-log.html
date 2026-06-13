@@ -240,7 +240,10 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">시간 기록</div>
-      <button class="now-btn" onclick="setActNow()">지금으로</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="now-btn" onclick="openManageModal('activity')">항목 수정</button>
+        <button class="now-btn" onclick="setActNow()">지금으로</button>
+      </div>
     </div>
     <div class="act-inputs">
       <div class="act-input-row">
@@ -258,15 +261,7 @@
         <input type="text" id="act-content" placeholder="메모 (선택)" style="border-radius:8px;">
       </div>
     </div>
-    <div class="act-btns">
-      <button class="act-btn" onclick="logActivity('공부')">📚 공부</button>
-      <button class="act-btn" onclick="logActivity('자기계발')">🌱 자기계발</button>
-      <button class="act-btn" onclick="logActivity('생활')">🏠 생활</button>
-      <button class="act-btn" onclick="logActivity('가족')">👨‍👩‍👧 가족</button>
-      <button class="act-btn" onclick="logActivity('취업준비')">💼 취업준비</button>
-      <button class="act-btn" onclick="logActivity('기타')">⭐ 기타</button>
-      <button class="act-btn" onclick="logSleepBlock()" style="background:#e8edf2; color:#4e6880; font-weight:600;">😴 취침</button>
-    </div>
+    <div class="act-btns" id="act-btns"></div>
   </div>
 
   <div class="card">
@@ -344,10 +339,12 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     const d = raw ? JSON.parse(raw) : {};
-    if (!d.medNames)  d.medNames  = [];
-    if (!d.medColors) d.medColors = {};
-    if (!d.logs)      d.logs      = [];
-    if (!d.todos)     d.todos     = [];
+    if (!d.medNames)       d.medNames       = [];
+    if (!d.medColors)      d.medColors      = {};
+    if (!d.logs)           d.logs           = [];
+    if (!d.todos)          d.todos          = [];
+    if (!d.actCategories || !d.actCategories.length)
+      d.actCategories = DEFAULT_ACT_CATEGORIES.map(c => ({...c}));
     return d;
   } catch { return { medNames: [], medColors: {}, logs: [], todos: [] }; }
 }
@@ -447,9 +444,27 @@ function updateClock() {
 
 // ── Actions ───────────────────────────────────────────────────────
 
-const ACT_CATEGORIES = ['공부', '자기계발', '생활', '가족', '취업준비', '기타'];
-const ACT_COLORS     = ['#a8d85a', '#f5d020', '#5bb3f0', '#c5a8e8', '#f472b6', '#90abc0'];
-const ACT_EMOJI      = { '공부':'📚', '자기계발':'🌱', '생활':'🏠', '가족':'👨‍👩‍👧', '취업준비':'💼', '기타':'⭐' };
+const DEFAULT_ACT_CATEGORIES = [
+  { name: '공부',    emoji: '📚', color: '#a8d85a' },
+  { name: '자기계발', emoji: '🌱', color: '#f5d020' },
+  { name: '생활',    emoji: '🏠', color: '#5bb3f0' },
+  { name: '가족',    emoji: '👨‍👩‍👧', color: '#c5a8e8' },
+  { name: '취업준비', emoji: '💼', color: '#f472b6' },
+  { name: '기타',    emoji: '⭐', color: '#90abc0' },
+];
+const ACT_PALETTE = ['#a8d85a','#f5d020','#5bb3f0','#c5a8e8','#f472b6','#90abc0','#f0a060','#7898ae','#e8a0c0','#80d0b0'];
+
+let ACT_CATEGORIES = DEFAULT_ACT_CATEGORIES.map(c => c.name);
+let ACT_COLORS     = DEFAULT_ACT_CATEGORIES.map(c => c.color);
+let ACT_EMOJI      = Object.fromEntries(DEFAULT_ACT_CATEGORIES.map(c => [c.name, c.emoji]));
+
+function syncActCategories(data) {
+  if (data.actCategories && data.actCategories.length) {
+    ACT_CATEGORIES = data.actCategories.map(c => c.name);
+    ACT_COLORS     = data.actCategories.map(c => c.color);
+    ACT_EMOJI      = Object.fromEntries(data.actCategories.map(c => [c.name, c.emoji || '']));
+  }
+}
 
 function setNow() {
   const now = new Date();
@@ -588,9 +603,10 @@ let manageType = null;
 
 function openManageModal(type) {
   manageType = type;
-  document.getElementById('manage-title').textContent = type === 'med' ? '약 항목 수정' : '할일 항목 수정';
+  const titles = { med: '약 항목 수정', todo: '할일 항목 수정', activity: '시간 기록 항목 수정' };
+  document.getElementById('manage-title').textContent = titles[type] || '항목 수정';
   document.getElementById('manage-input').value = '';
-  document.getElementById('manage-input').placeholder = type === 'med' ? '약 이름 입력' : '할일 입력';
+  document.getElementById('manage-input').placeholder = type === 'med' ? '약 이름 입력' : type === 'activity' ? '카테고리 이름 입력' : '할일 입력';
   renderManageList();
   document.getElementById('manage-overlay').classList.add('open');
 }
@@ -618,6 +634,19 @@ function renderManageList() {
         <button class="manage-del-btn" onclick="removeMedName('${name}')">삭제</button>
       </div>`;
     }).join('');
+  } else if (manageType === 'activity') {
+    const cats = data.actCategories || [];
+    if (!cats.length) {
+      el.innerHTML = '<div class="empty-msg" style="padding:8px 0;">카테고리가 없습니다</div>';
+      return;
+    }
+    el.innerHTML = cats.map((cat, i) => `
+      <div class="manage-item">
+        <span class="manage-item-label">${cat.emoji || ''} ${cat.name}</span>
+        <input type="color" class="manage-color" value="${cat.color}" title="색상 변경"
+          onchange="updateActCategoryColor(${i}, this.value)">
+        <button class="manage-del-btn" onclick="deleteActCategory(${i})">삭제</button>
+      </div>`).join('');
   } else {
     if (!data.todos.length) {
       el.innerHTML = '<div class="empty-msg" style="padding:8px 0;">할일이 없습니다</div>';
@@ -637,6 +666,14 @@ function manageAdd() {
   const data = load();
   if (manageType === 'med') {
     if (!data.medNames.includes(val)) { data.medNames.push(val); save(data); }
+  } else if (manageType === 'activity') {
+    const cats = data.actCategories || [];
+    if (!cats.find(c => c.name === val)) {
+      const color = ACT_PALETTE[cats.length % ACT_PALETTE.length];
+      cats.push({ name: val, emoji: '', color });
+      data.actCategories = cats;
+      save(data);
+    }
   } else {
     data.todos.push({ id: String(Date.now()), text: val, done: false });
     save(data);
@@ -649,6 +686,24 @@ function updateMedColor(name, color) {
   const data = load();
   data.medColors[name] = color;
   save(data);
+}
+
+function updateActCategoryColor(idx, color) {
+  const data = load();
+  if (data.actCategories && data.actCategories[idx]) {
+    data.actCategories[idx].color = color;
+    save(data);
+  }
+}
+
+function deleteActCategory(idx) {
+  const data = load();
+  if (!data.actCategories) return;
+  const name = data.actCategories[idx]?.name;
+  if (!confirm(`"${name}" 카테고리를 삭제할까요?\n(기존 기록은 유지됩니다)`)) return;
+  data.actCategories.splice(idx, 1);
+  save(data);
+  renderManageList();
 }
 
 function removeMedName(name) {
@@ -845,9 +900,11 @@ function clearAllLogs() {
 
 function render() {
   const data = load();
+  syncActCategories(data);
   renderSummary(data);
   renderMedRow(data);
   renderTodos(data);
+  renderActButtons(data);
   renderChart(data);
   renderLogFilter();
   renderLogs(data);
@@ -911,6 +968,26 @@ function renderMedRow(data) {
     chip.appendChild(btn);
     row.appendChild(chip);
   });
+}
+
+function renderActButtons(data) {
+  const wrap = document.getElementById('act-btns');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  (data.actCategories || DEFAULT_ACT_CATEGORIES).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'act-btn';
+    btn.style.borderLeft = `3px solid ${cat.color}`;
+    btn.textContent = `${cat.emoji || ''} ${cat.name}`.trim();
+    btn.onclick = () => logActivity(cat.name);
+    wrap.appendChild(btn);
+  });
+  const sleepBtn = document.createElement('button');
+  sleepBtn.className = 'act-btn';
+  sleepBtn.style.cssText = 'background:#e8edf2; color:#4e6880; font-weight:600;';
+  sleepBtn.textContent = '😴 취침';
+  sleepBtn.onclick = logSleepBlock;
+  wrap.appendChild(sleepBtn);
 }
 
 function renderLogFilter() {
@@ -1251,10 +1328,11 @@ function importData(e) {
       const current = load();
       const existingIds = new Set(current.logs.map(l => l.id));
       const merged = {
-        medNames:  [...new Set([...current.medNames,  ...(imported.medNames  || [])])],
-        medColors: { ...current.medColors, ...(imported.medColors || {}) },
-        todos:     [...(current.todos || []), ...(imported.todos || []).filter(t => !(current.todos||[]).find(x => x.id === t.id))],
-        logs:      [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))].sort((a,b) => new Date(a.ts)-new Date(b.ts))
+        medNames:      [...new Set([...current.medNames, ...(imported.medNames || [])])],
+        medColors:     { ...current.medColors, ...(imported.medColors || {}) },
+        actCategories: imported.actCategories || current.actCategories,
+        todos:         [...(current.todos || []), ...(imported.todos || []).filter(t => !(current.todos||[]).find(x => x.id === t.id))],
+        logs:          [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))].sort((a,b) => new Date(a.ts)-new Date(b.ts))
       };
       save(merged);
       render();
