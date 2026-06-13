@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>라이프 로그</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f2f2f7;
+      color: #1d1d1f;
+    }
+    header {
+      background: white;
+      padding: 14px 20px;
+      border-bottom: 1px solid #e5e5ea;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header a { color: #007aff; text-decoration: none; font-size: 15px; }
+    header h1 { font-size: 17px; font-weight: 600; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 12px;
+    }
+
+    /* Today summary */
+    .status-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .status-cell { background: #f2f2f7; border-radius: 8px; padding: 10px 6px; text-align: center; }
+    .status-cell .lbl { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
+    .status-cell .val { font-size: 15px; font-weight: 600; }
+
+    /* Sleep button */
+    #sleep-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+    #sleep-btn:active { opacity: 0.75; }
+    .sleep-hint { font-size: 12px; color: #8e8e93; text-align: center; margin-top: 8px; min-height: 16px; }
+
+    /* Medication */
+    .med-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .med-chip { position: relative; display: inline-flex; }
+    .med-btn {
+      background: #e8f3ff;
+      color: #007aff;
+      border: none;
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .med-btn:active { opacity: 0.7; }
+    .med-del {
+      position: absolute;
+      top: -5px; right: -5px;
+      width: 17px; height: 17px;
+      background: #ff3b30;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 11px;
+      cursor: pointer;
+      line-height: 17px;
+      text-align: center;
+      padding: 0;
+    }
+    .add-med-btn {
+      background: #f2f2f7;
+      color: #8e8e93;
+      border: none;
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Charts */
+    .tab-row { display: flex; gap: 6px; margin-bottom: 12px; }
+    .tab {
+      background: #f2f2f7;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #1d1d1f;
+    }
+    .tab.active { background: #007aff; color: white; font-weight: 500; }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* Log list */
+    .log-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid #f2f2f7;
+      font-size: 14px;
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-meta { display: flex; align-items: center; gap: 8px; }
+    .log-time-str { font-size: 12px; color: #8e8e93; }
+    .del-btn { background: none; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; }
+    .empty-msg { font-size: 14px; color: #8e8e93; padding: 4px 0; }
+
+    #auth-overlay {
+      position: fixed; inset: 0;
+      background: #f2f2f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #auth-box {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 280px;
+      text-align: center;
+    }
+    #auth-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    #auth-box p { font-size: 13px; color: #8e8e93; margin-bottom: 20px; }
+    #auth-input {
+      width: 100%;
+      border: 1.5px solid #e5e5ea;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 18px;
+      letter-spacing: 6px;
+      text-align: center;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    #auth-input:focus { border-color: #007aff; }
+    #auth-confirm {
+      width: 100%;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #auth-err { font-size: 13px; color: #ff3b30; margin-top: 10px; min-height: 18px; }
+  </style>
+</head>
+<body>
+
+<div id="auth-overlay">
+  <div id="auth-box">
+    <h2>라이프 로그</h2>
+    <p>비밀번호를 입력하세요</p>
+    <input type="password" id="auth-input" maxlength="20" onkeydown="if(event.key==='Enter')checkAuth()">
+    <button id="auth-confirm" onclick="checkAuth()">확인</button>
+    <div id="auth-err"></div>
+  </div>
+</div>
+
+<header>
+  <a href="index.html">← 홈</a>
+  <h1>라이프 로그</h1>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-title">오늘</div>
+    <div class="status-row">
+      <div class="status-cell"><div class="lbl">취침</div><div class="val" id="s-start">—</div></div>
+      <div class="status-cell"><div class="lbl">기상</div><div class="val" id="s-end">—</div></div>
+      <div class="status-cell"><div class="lbl">수면</div><div class="val" id="s-dur">—</div></div>
+      <div class="status-cell"><div class="lbl">복약</div><div class="val" id="s-med">0</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">수면</div>
+    <button id="sleep-btn" onclick="toggleSleep()">😴 잠든다</button>
+    <div class="sleep-hint" id="sleep-hint"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">약</div>
+    <div class="med-row" id="med-row"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">그래프</div>
+    <div class="tab-row">
+      <button class="tab active" data-chart="duration" onclick="switchChart('duration')">수면 시간</button>
+      <button class="tab" data-chart="timing" onclick="switchChart('timing')">수면 타이밍</button>
+      <button class="tab" data-chart="med" onclick="switchChart('med')">복약 타이밍</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">최근 기록</div>
+    <div id="log-items"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">데이터</div>
+    <div style="display:flex; gap:8px;">
+      <button class="add-med-btn" style="flex:1; border-radius:8px; padding:10px;" onclick="exportData()">⬇ 내보내기</button>
+      <label class="add-med-btn" style="flex:1; border-radius:8px; padding:10px; text-align:center; cursor:pointer;">
+        ⬆ 불러오기
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+      </label>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  if (sessionStorage.getItem('lifeLogAuth') === '1') {
+    document.getElementById('auth-overlay').style.display = 'none';
+  } else {
+    document.getElementById('auth-input').focus();
+  }
+})();
+
+function checkAuth() {
+  if (document.getElementById('auth-input').value === '1029') {
+    sessionStorage.setItem('lifeLogAuth', '1');
+    document.getElementById('auth-overlay').style.display = 'none';
+  } else {
+    document.getElementById('auth-err').textContent = '비밀번호가 틀렸습니다';
+    document.getElementById('auth-input').value = '';
+    document.getElementById('auth-input').focus();
+  }
+}
+
+const KEY = 'lifeLog_v1';
+let chartInst = null;
+let activeChart = 'duration';
+
+// ── Data ──────────────────────────────────────────────────────────
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : { medNames: [], logs: [] };
+  } catch { return { medNames: [], logs: [] }; }
+}
+
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+
+// ── Helpers ───────────────────────────────────────────────────────
+
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function toHour(iso) {
+  const d = new Date(iso);
+  return d.getHours() + d.getMinutes() / 60;
+}
+
+function isToday(iso) {
+  const d = new Date(iso), t = new Date();
+  return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+}
+
+function last14Days() {
+  return Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  });
+}
+
+function getSessions(logs) {
+  const sessions = [];
+  let pending = null;
+  for (const l of logs) {
+    if (l.type === 'sleep_start') {
+      pending = l;
+    } else if (l.type === 'sleep_end' && pending) {
+      sessions.push({ start: pending.ts, end: l.ts });
+      pending = null;
+    }
+  }
+  if (pending) sessions.push({ start: pending.ts, end: null });
+  return sessions;
+}
+
+// ── Actions ───────────────────────────────────────────────────────
+
+function toggleSleep() {
+  const data = load();
+  const sleepLogs = data.logs.filter(l => l.type === 'sleep_start' || l.type === 'sleep_end');
+  const last = sleepLogs[sleepLogs.length - 1];
+  const isSleeping = last && last.type === 'sleep_start';
+  data.logs.push({ id: String(Date.now()), type: isSleeping ? 'sleep_end' : 'sleep_start', ts: new Date().toISOString() });
+  save(data);
+  render();
+}
+
+function logMed(name) {
+  const data = load();
+  data.logs.push({ id: String(Date.now()), type: 'med', name, ts: new Date().toISOString() });
+  save(data);
+  render();
+}
+
+function addMedName() {
+  const name = prompt('약 이름을 입력하세요:');
+  if (!name || !name.trim()) return;
+  const data = load();
+  const t = name.trim();
+  if (!data.medNames.includes(t)) { data.medNames.push(t); save(data); }
+  render();
+}
+
+function removeMedName(name) {
+  if (!confirm(`"${name}" 버튼을 삭제할까요?\n(복약 이력은 유지됩니다)`)) return;
+  const data = load();
+  data.medNames = data.medNames.filter(n => n !== name);
+  save(data);
+  render();
+}
+
+function deleteLog(id) {
+  const data = load();
+  data.logs = data.logs.filter(l => l.id !== id);
+  save(data);
+  render();
+}
+
+function switchChart(type) {
+  activeChart = type;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.chart === type));
+  renderChart(load());
+}
+
+// ── Render ────────────────────────────────────────────────────────
+
+function render() {
+  const data = load();
+  renderSummary(data);
+  renderSleepBtn(data);
+  renderMedRow(data);
+  renderChart(data);
+  renderLogs(data);
+}
+
+function renderSummary(data) {
+  const sessions = getSessions(data.logs);
+  const today = new Date();
+  let todaySess = null;
+  for (let i = sessions.length - 1; i >= 0; i--) {
+    const s = sessions[i];
+    const endD = s.end ? new Date(s.end) : today;
+    const startD = new Date(s.start);
+    if (endD.toDateString() === today.toDateString() || startD.toDateString() === today.toDateString()) {
+      todaySess = s; break;
+    }
+  }
+
+  if (todaySess) {
+    document.getElementById('s-start').textContent = fmtTime(todaySess.start);
+    if (todaySess.end) {
+      document.getElementById('s-end').textContent = fmtTime(todaySess.end);
+      const h = (new Date(todaySess.end) - new Date(todaySess.start)) / 3600000;
+      document.getElementById('s-dur').textContent = h.toFixed(1) + 'h';
+    } else {
+      document.getElementById('s-end').textContent = '취침중';
+      document.getElementById('s-dur').textContent = '—';
+    }
+  } else {
+    ['s-start','s-end','s-dur'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+  const cnt = data.logs.filter(l => l.type === 'med' && isToday(l.ts)).length;
+  document.getElementById('s-med').textContent = String(cnt);
+}
+
+function renderSleepBtn(data) {
+  const sleepLogs = data.logs.filter(l => l.type === 'sleep_start' || l.type === 'sleep_end');
+  const last = sleepLogs[sleepLogs.length - 1];
+  const isSleeping = last && last.type === 'sleep_start';
+  const btn = document.getElementById('sleep-btn');
+  const hint = document.getElementById('sleep-hint');
+
+  if (isSleeping) {
+    btn.textContent = '☀️ 일어났다';
+    btn.style.cssText = 'background:#ffd60a; color:#1c1c1e;';
+    hint.textContent = `취침: ${fmtTime(last.ts)}`;
+  } else {
+    btn.textContent = '😴 잠든다';
+    btn.style.cssText = 'background:#1c1c1e; color:white;';
+    hint.textContent = last ? `마지막 기상: ${fmtTime(last.ts)}` : '';
+  }
+}
+
+function renderMedRow(data) {
+  const row = document.getElementById('med-row');
+  row.innerHTML = '';
+
+  data.medNames.forEach(name => {
+    const chip = document.createElement('div');
+    chip.className = 'med-chip';
+
+    const btn = document.createElement('button');
+    btn.className = 'med-btn';
+    btn.textContent = `💊 ${name}`;
+    btn.onclick = () => logMed(name);
+
+    const del = document.createElement('button');
+    del.className = 'med-del';
+    del.textContent = '×';
+    del.title = '버튼 삭제';
+    del.onclick = e => { e.stopPropagation(); removeMedName(name); };
+
+    chip.appendChild(btn);
+    chip.appendChild(del);
+    row.appendChild(chip);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-med-btn';
+  addBtn.textContent = '+ 추가';
+  addBtn.onclick = addMedName;
+  row.appendChild(addBtn);
+}
+
+function renderLogs(data) {
+  const el = document.getElementById('log-items');
+  const recent = [...data.logs].reverse().slice(0, 30);
+  if (!recent.length) {
+    el.innerHTML = '<div class="empty-msg">기록이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = recent.map(l => {
+    const label = l.type === 'med' ? `💊 ${l.name}` :
+                  l.type === 'sleep_start' ? '😴 취침' : '☀️ 기상';
+    return `<div class="log-row">
+      <span>${label}</span>
+      <span class="log-meta">
+        <span class="log-time-str">${fmtDate(l.ts)} ${fmtTime(l.ts)}</span>
+        <button class="del-btn" onclick="deleteLog('${l.id}')">삭제</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// ── Charts ────────────────────────────────────────────────────────
+
+function renderChart(data) {
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  const ctx = document.getElementById('chart').getContext('2d');
+  const days = last14Days();
+
+  if (activeChart === 'duration') {
+    const sessions = getSessions(data.logs);
+    const durByDay = {};
+    sessions.forEach(s => {
+      if (!s.end) return;
+      const key = fmtDate(s.end);
+      if (days.includes(key)) {
+        durByDay[key] = (durByDay[key] || 0) + (new Date(s.end) - new Date(s.start)) / 3600000;
+      }
+    });
+
+    chartInst = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: days,
+        datasets: [{
+          label: '수면 시간 (h)',
+          data: days.map(d => durByDay[d] != null ? +durByDay[d].toFixed(2) : null),
+          backgroundColor: '#5e9bdb',
+          borderRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, max: 14, ticks: { callback: v => v + 'h' } }
+        }
+      }
+    });
+
+  } else if (activeChart === 'timing') {
+    const sessions = getSessions(data.logs);
+    const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
+    const sleepPts = [], wakePts = [];
+
+    sessions.forEach(s => {
+      const si = dayIdx[fmtDate(s.start)];
+      if (si != null) sleepPts.push({ x: si, y: toHour(s.start) });
+      if (s.end) {
+        const ei = dayIdx[fmtDate(s.end)];
+        if (ei != null) wakePts.push({ x: ei, y: toHour(s.end) });
+      }
+    });
+
+    chartInst = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          { label: '취침', data: sleepPts, backgroundColor: '#1c1c1e', pointRadius: 7 },
+          { label: '기상', data: wakePts, backgroundColor: '#34c759', pointRadius: 7 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { type: 'linear', min: -0.5, max: 13.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
+        }
+      }
+    });
+
+  } else {
+    const COLORS = ['#007aff','#ff3b30','#ff9500','#34c759','#af52de','#5ac8fa'];
+    const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
+    const allNames = [...new Set(data.logs.filter(l => l.type === 'med').map(l => l.name))];
+
+    const datasets = allNames.map((name, ci) => ({
+      label: name,
+      data: data.logs
+        .filter(l => l.type === 'med' && l.name === name)
+        .map(l => { const xi = dayIdx[fmtDate(l.ts)]; return xi != null ? { x: xi, y: toHour(l.ts) } : null; })
+        .filter(Boolean),
+      backgroundColor: COLORS[ci % COLORS.length],
+      pointRadius: 8,
+    }));
+
+    chartInst = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { type: 'linear', min: -0.5, max: 13.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
+        }
+      }
+    });
+  }
+}
+
+function exportData() {
+  const data = load();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lifelog-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.logs || !imported.medNames) throw new Error();
+      const current = load();
+      const existingIds = new Set(current.logs.map(l => l.id));
+      const merged = {
+        medNames: [...new Set([...current.medNames, ...imported.medNames])],
+        logs: [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))]
+          .sort((a, b) => new Date(a.ts) - new Date(b.ts))
+      };
+      save(merged);
+      render();
+      alert(`불러오기 완료: 로그 ${imported.logs.length}개 병합됨`);
+    } catch {
+      alert('올바른 라이프 로그 파일이 아닙니다');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+render();
+</script>
+</body>
+</html>

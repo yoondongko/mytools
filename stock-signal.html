@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>내 포지션 신호등</title>
+<title>???ъ????좏샇??/title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -11,8 +11,8 @@
     --bg:#0F1115;
     --card:#181B20;
     --card-border:#262B33;
-    --up:#E84142;     /* 한국 증시 상승색(빨강) */
-    --down:#4C8DFF;   /* 한국 증시 하락색(파랑) */
+    --up:#E84142;
+    --down:#4C8DFF;
     --neutral:#8A8F98;
     --gold:#FFC857;
     --text:#ECEEF1;
@@ -33,10 +33,7 @@
   header{margin-bottom:28px;}
   h1{
     font-family:'Space Grotesk','Noto Sans KR',sans-serif;
-    font-size:28px;
-    font-weight:700;
-    margin:0 0 6px;
-    letter-spacing:-0.02em;
+    font-size:28px;font-weight:700;margin:0 0 6px;letter-spacing:-0.02em;
   }
   header p{color:var(--text-dim);margin:0;font-size:14px;}
   .status-line{
@@ -45,24 +42,26 @@
     font-family:'JetBrains Mono',monospace;
   }
   .dot{width:8px;height:8px;border-radius:50%;background:var(--neutral);}
-  .dot.live{background:var(--up);box-shadow:0 0 0 0 rgba(232,65,66,.6);animation:pulse 2s infinite;}
+  .dot.live{background:var(--up);animation:pulse 2s infinite;}
   @keyframes pulse{
     0%{box-shadow:0 0 0 0 rgba(232,65,66,.5);}
     70%{box-shadow:0 0 0 6px rgba(232,65,66,0);}
     100%{box-shadow:0 0 0 0 rgba(232,65,66,0);}
   }
 
+  /* ?? 異붽? ???? */
   .add-form{
-    display:grid;
-    grid-template-columns:90px 1fr 130px auto;
-    gap:8px;
     background:var(--card);
     border:1px solid var(--card-border);
     border-radius:12px;
     padding:14px;
     margin-bottom:24px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
   }
-  .add-form input{
+  .add-row{display:flex;gap:8px;align-items:stretch;}
+  .add-form input, .add-form .search-input{
     background:#0F1115;
     border:1px solid var(--card-border);
     border-radius:8px;
@@ -70,23 +69,50 @@
     color:var(--text);
     font-size:14px;
     font-family:'JetBrains Mono','Noto Sans KR',monospace;
-    width:100%;
   }
   .add-form input::placeholder{color:#565C66;}
-  .add-form button{
-    background:var(--up);
-    border:none;
-    border-radius:8px;
-    color:#fff;
-    font-weight:700;
-    font-size:14px;
-    padding:10px 18px;
-    cursor:pointer;
-    font-family:'Noto Sans KR',sans-serif;
-    transition:opacity .15s;
-  }
-  .add-form button:hover{opacity:.85;}
+  .add-form input:focus{outline:none;border-color:var(--gold);}
 
+  /* 寃???섑띁 */
+  .search-wrap{position:relative;flex:1;}
+  .search-input{width:100%;display:block;}
+  .search-input:focus{outline:none;border-color:var(--gold);}
+  .search-dropdown{
+    display:none;
+    position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:#1E2128;border:1px solid var(--card-border);
+    border-radius:10px;z-index:200;
+    max-height:220px;overflow-y:auto;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);
+  }
+  .search-dropdown.open{display:block;}
+  .search-dropdown li{
+    list-style:none;padding:10px 14px;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:14px;border-bottom:1px solid var(--card-border);
+  }
+  .search-dropdown li:last-child{border-bottom:none;}
+  .search-dropdown li:hover{background:#262B33;}
+  .search-dropdown li .s-code{
+    color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:12px;
+  }
+  .search-no-result{
+    padding:12px 14px;color:var(--text-dim);font-size:13px;text-align:center;
+  }
+
+  .num-input{width:130px;flex-shrink:0;}
+  .qty-input{width:100px;flex-shrink:0;}
+  .add-btn{
+    background:var(--up);border:none;border-radius:8px;
+    color:#fff;font-weight:700;font-size:14px;
+    padding:10px 18px;cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;transition:opacity .15s;
+    white-space:nowrap;flex-shrink:0;
+  }
+  .add-btn:hover{opacity:.85;}
+  .add-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* ?? 踰붾? ?? */
   .legend{
     display:flex;flex-wrap:wrap;gap:10px;
     margin-bottom:24px;font-size:12px;color:var(--text-dim);
@@ -94,12 +120,10 @@
   .legend span{display:flex;align-items:center;gap:5px;}
   .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
 
+  /* ?? 移대뱶 ?? */
   .card{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:14px;
-    padding:18px 20px;
-    margin-bottom:14px;
+    background:var(--card);border:1px solid var(--card-border);
+    border-radius:14px;padding:18px 20px;margin-bottom:14px;
   }
   .card-top{
     display:flex;justify-content:space-between;align-items:flex-start;
@@ -113,12 +137,10 @@
   }
   .badge.none{background:#262B33;color:var(--text-dim);}
 
+  /* ?섏튂 洹몃━??(4??횞 2?? */
   .numbers{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-    font-family:'JetBrains Mono',monospace;
-    margin-bottom:16px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+    font-family:'JetBrains Mono',monospace;margin-bottom:16px;
   }
   .numbers .box{
     background:#0F1115;border:1px solid var(--card-border);
@@ -128,26 +150,26 @@
     display:block;font-size:11px;color:var(--text-dim);
     margin-bottom:4px;font-family:'Noto Sans KR',sans-serif;
   }
-  .numbers .box .val{font-size:15px;font-weight:700;}
+  .numbers .box .val{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .numbers .box input{
     background:transparent;border:none;color:var(--text);
-    font-size:15px;font-weight:700;width:100%;font-family:'JetBrains Mono',monospace;
-    padding:0;
+    font-size:15px;font-weight:700;width:100%;
+    font-family:'JetBrains Mono',monospace;padding:0;
   }
   .numbers .box input:focus{outline:none;color:var(--gold);}
   .pct-up{color:var(--up);}
   .pct-down{color:var(--down);}
   .pct-flat{color:var(--neutral);}
+  .pnl-up{color:var(--up);}
+  .pnl-down{color:var(--down);}
+  .pnl-flat{color:var(--neutral);}
 
-  /* 게이지: 8개 구간 */
-  .gauge{
-    display:flex;gap:3px;height:34px;border-radius:8px;overflow:hidden;
-  }
+  /* 寃뚯씠吏 */
+  .gauge{display:flex;gap:3px;height:34px;border-radius:8px;overflow:hidden;}
   .seg{
     flex:1;display:flex;align-items:center;justify-content:center;
     font-size:10px;font-weight:700;color:#0F1115;
-    opacity:.28;transition:all .25s ease;
-    text-align:center;line-height:1.1;padding:2px;
+    opacity:.28;transition:all .25s ease;text-align:center;line-height:1.1;padding:2px;
   }
   .seg span{display:block;}
   .seg.active{opacity:1;transform:scaleY(1.08);box-shadow:0 0 14px rgba(255,255,255,.18);}
@@ -160,11 +182,57 @@
   .seg.s6{background:var(--up);}
   .seg.s7{background:var(--very-up);}
 
+  /* 嫄곕옒 ?낅젰 諛?*/
+  .trade-bar{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    margin-top:12px;padding-top:12px;border-top:1px solid var(--card-border);
+  }
+  .trade-section{
+    display:flex;align-items:center;gap:6px;
+    background:#0F1115;border:1px solid var(--card-border);
+    border-radius:10px;padding:8px 10px;
+  }
+  .trade-label{
+    font-size:12px;font-weight:700;white-space:nowrap;
+    font-family:'Noto Sans KR',sans-serif;min-width:24px;
+  }
+  .trade-label.buy{color:var(--up);}
+  .trade-label.sell{color:var(--down);}
+  .trade-section input{
+    flex:1;min-width:0;
+    background:transparent;border:none;
+    border-bottom:1px solid var(--card-border);
+    color:var(--text);font-size:13px;
+    font-family:'JetBrains Mono',monospace;padding:2px 4px;
+  }
+  .trade-section input::placeholder{color:#565C66;font-size:11px;}
+  .trade-section input:focus{outline:none;border-color:var(--gold);}
+  .trade-btn{
+    border:none;border-radius:6px;padding:5px 10px;
+    font-size:12px;font-weight:700;cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;white-space:nowrap;
+    transition:opacity .15s;flex-shrink:0;
+  }
+  .trade-btn:hover{opacity:.8;}
+  .buy-btn{background:var(--up);color:#fff;}
+  .sell-btn{background:var(--down);color:#fff;}
+
+  /* 吏곸쟾 留ㅻ룄 ?먯씡 */
+  .last-sell{
+    margin-top:8px;padding:7px 12px;border-radius:8px;
+    font-size:12px;font-family:'JetBrains Mono',monospace;
+    background:#0F1115;border:1px solid var(--card-border);
+    display:flex;justify-content:space-between;align-items:center;
+    color:var(--text-dim);
+  }
+  .last-sell .pnl-val{font-weight:700;}
+
   .card-foot{
     display:flex;justify-content:space-between;align-items:center;
-    margin-top:12px;font-size:11px;color:var(--text-dim);
+    margin-top:10px;font-size:11px;color:var(--text-dim);
     font-family:'JetBrains Mono',monospace;
   }
+  .card-foot .foot-dates{display:flex;flex-direction:column;gap:2px;}
   .card-foot button{
     background:none;border:none;color:#565C66;cursor:pointer;
     font-size:12px;font-family:'Noto Sans KR',sans-serif;
@@ -176,187 +244,272 @@
     text-align:center;color:var(--text-dim);padding:60px 20px;
     border:1px dashed var(--card-border);border-radius:14px;font-size:14px;
   }
-
   .notice{
     margin-top:28px;font-size:12px;color:var(--text-dim);
     line-height:1.7;border-top:1px solid var(--card-border);padding-top:16px;
   }
   .notice b{color:var(--text);}
+
+  /* 내보내기/가져오기 */
+  .io-bar{
+    display:flex;justify-content:flex-end;gap:8px;
+    margin-bottom:16px;
+  }
+  .io-btn{
+    background:none;border:1px solid var(--card-border);border-radius:8px;
+    color:var(--text-dim);font-size:12px;font-weight:700;
+    padding:7px 14px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+    transition:all .15s;
+  }
+  .io-btn:hover{border-color:var(--gold);color:var(--gold);}
 </style>
 </head>
 <body>
+<script src="auth.js"></script>
+
 <div class="wrap">
   <header>
-    <h1>내 포지션 신호등</h1>
-    <p>매입평균단가 대비 / 전일가 대비 등락률을 기준으로 매매 신호를 알려줍니다.</p>
+    <h1>???ъ????좏샇??/h1>
+    <p>留ㅼ엯?됯퇏?④? ?鍮?/ ?꾩씪媛 ?鍮??깅씫瑜좎쓣 湲곗??쇰줈 留ㅻℓ ?좏샇瑜??뚮젮以띾땲??</p>
     <div class="status-line">
       <span class="dot" id="liveDot"></span>
-      <span id="statusText">대기 중</span>
+      <span id="statusText">?湲?以?/span>
     </div>
   </header>
 
-  <form class="add-form" id="addForm">
-    <input id="inCode" placeholder="종목코드 (6자리)" maxlength="6" inputmode="numeric" required>
-    <input id="inName" placeholder="종목명 (예: 삼성전자)" required>
-    <input id="inAvg" placeholder="매입평균단가" inputmode="numeric" required>
-    <button type="submit">추가</button>
-  </form>
+  <div class="io-bar">
+    <button class="io-btn" id="exportBtn">내보내기 (JSON)</button>
+    <label class="io-btn" for="importFile">가져오기 (JSON)</label>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
+
+
+  <div class="add-form">
+    <div class="add-row">
+      <div class="search-wrap">
+        <input type="text" class="search-input" id="inSearch"
+          placeholder="醫낅ぉ紐??먮뒗 肄붾뱶 寃??(?? ?쇱꽦?꾩옄, 005930)"
+          autocomplete="off">
+        <ul class="search-dropdown" id="searchDropdown"></ul>
+      </div>
+    </div>
+    <div class="add-row">
+      <input type="number" id="inAvg" class="num-input" placeholder="留ㅼ엯?됯퇏?④?" inputmode="numeric">
+      <input type="number" id="inQty" class="qty-input" placeholder="?섎웾 (二?" inputmode="numeric">
+      <button class="add-btn" id="addBtn" disabled>異붽?</button>
+    </div>
+    <div id="selectedInfo" style="font-size:12px;color:var(--text-dim);padding-left:2px;display:none;">
+      ?좏깮?? <span id="selectedLabel" style="color:var(--gold);font-weight:700;"></span>
+    </div>
+  </div>
 
   <div class="legend">
-    <span><i style="background:var(--very-down)"></i>매우 손절 추천</span>
-    <span><i style="background:var(--down)"></i>손절 추천</span>
-    <span><i style="background:#3A3F48"></i>관망</span>
-    <span><i style="background:var(--gold)"></i>물타기 추천</span>
-    <span><i style="background:#4A4F58"></i>버티기</span>
-    <span><i style="background:#FFA84A"></i>매도 수익화 가능</span>
-    <span><i style="background:var(--up)"></i>상승장</span>
-    <span><i style="background:var(--very-up)"></i>매우상승장</span>
+    <span><i style="background:var(--very-down)"></i>留ㅼ슦 ?먯젅 異붿쿇</span>
+    <span><i style="background:var(--down)"></i>?먯젅 異붿쿇</span>
+    <span><i style="background:#3A3F48"></i>愿留?/span>
+    <span><i style="background:var(--gold)"></i>臾쇳?湲?異붿쿇</span>
+    <span><i style="background:#4A4F58"></i>踰꾪떚湲?/span>
+    <span><i style="background:#FFA84A"></i>留ㅻ룄 ?섏씡??媛??/span>
+    <span><i style="background:var(--up)"></i>?곸듅??/span>
+    <span><i style="background:var(--very-up)"></i>留ㅼ슦?곸듅??/span>
   </div>
 
   <div id="cards"></div>
   <div class="empty" id="emptyMsg" style="display:none;">
-    아직 등록된 종목이 없습니다. 위에서 종목코드, 종목명, 매입평균단가를 입력해 추가하세요.
+    ?꾩쭅 ?깅줉??醫낅ぉ???놁뒿?덈떎. ?꾩뿉??醫낅ぉ??寃?됲빐 異붽??섏꽭??
   </div>
 
   <div class="notice">
-    <b>참고</b><br>
-    · 가격은 60초마다 자동 조회를 시도합니다. 브라우저 환경의 CORS 정책상 외부 시세 API 접속이 차단될 수 있으며, 이 경우 상단 상태가 "자동조회 실패 — 수동 입력 필요"로 표시됩니다.<br>
-    · 자동조회가 실패하면 카드의 <b>현재가 / 전일가</b> 칸을 직접 클릭해 값을 입력하세요. 수동 입력 값으로 신호가 즉시 갱신됩니다.<br>
-    · 종목 정보(코드/이름/매입단가)는 이 브라우저에만 저장됩니다.
+    <b>李멸퀬</b><br>
+    쨌 媛寃⑹? 60珥덈쭏???먮룞 議고쉶瑜??쒕룄?⑸땲?? CORS ?뺤콉?쇰줈 李⑤떒?섎㈃ "?먮룞議고쉶 ?ㅽ뙣"濡??쒖떆?섎ŉ, ??寃쎌슦 移대뱶??<b>?꾩옱媛 / ?꾩씪媛</b> 移몄쓣 吏곸젒 ?낅젰?댁＜?몄슂.<br>
+    쨌 <b>留ㅼ닔</b> ?곸슜 ???섎웾쨌?④?濡??됯퇏?④?媛 ?먮룞 ?ш퀎?곕맗?덈떎.<br>
+    쨌 <b>留ㅻ룄</b> ?곸슜 ???섎웾??李④컧?섍퀬 吏곸쟾 留ㅻ룄 ?ㅽ쁽?먯씡??移대뱶???쒖떆?⑸땲??(?꾩쟻 ?꾨떂).<br>
+    쨌 醫낅ぉ ?뺣낫????釉뚮씪?곗??먮쭔 ??λ맗?덈떎.
   </div>
 </div>
 
 <script>
+// ---------- ?뷀샇 寃뚯씠??----------
+(function(){
+  const PASS = '1029';
+  const gate = document.getElementById('passGate');
+  if(sessionStorage.getItem('auth') === 'ok'){ gate.remove(); return; }
+
+  function tryUnlock(){
+    const input = document.getElementById('passInput');
+    if(input.value === PASS){
+      sessionStorage.setItem('auth', 'ok');
+      gate.style.transition = 'opacity .2s';
+      gate.style.opacity = '0';
+      setTimeout(()=> gate.remove(), 200);
+    } else {
+      document.getElementById('passErr').textContent = '?뷀샇媛 ??몄뒿?덈떎';
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  document.getElementById('passBtn').addEventListener('click', tryUnlock);
+  document.getElementById('passInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') tryUnlock();
+    else document.getElementById('passErr').textContent = '';
+  });
+})();
+
 const REFRESH_MS = 60000;
 let holdings = [];
 
 // ---------- storage ----------
-async function loadHoldings(){
+function loadHoldings(){
   try{
-    const r = await window.storage.get('holdings', false);
-    if(r && r.value){ holdings = JSON.parse(r.value); }
+    const raw = localStorage.getItem('holdings');
+    if(raw) holdings = JSON.parse(raw);
+    holdings.forEach(h=>{
+      if(h.qty == null) h.qty = 0;
+      if(!h.addedAt) h.addedAt = Date.now();
+    });
   }catch(e){ holdings = []; }
   render();
 }
-async function saveHoldings(){
-  try{ await window.storage.set('holdings', JSON.stringify(holdings), false); }
-  catch(e){ console.error('저장 실패', e); }
+function saveHoldings(){
+  try{ localStorage.setItem('holdings', JSON.stringify(holdings)); }
+  catch(e){ console.error('????ㅽ뙣', e); }
 }
 
-// ---------- status logic ----------
-// returns {label, seg, pctMode, pct}
+// ---------- status ----------
 function computeStatus(avg, current, prev){
-  if(!avg || !current){ return {label:null, seg:null, pctMode:null, pct:null}; }
-
+  if(!avg || !current) return {label:null, seg:null, pct:null};
   if(current < avg){
-    const d = (avg - current) / avg * 100; // 매입단가 대비 하락률(양수)
-    let label=null, seg=2;
-    if(d > 10){ label='매우 손절 추천'; seg=0; }
-    else if(d > 7){ label='손절 추천'; seg=1; }
-    else if(d > 5){ label=null; seg=2; }
-    else if(d > 0){ label='물타기 추천'; seg=3; }
-    return {label, seg, pctMode:'avg', pct:-d};
-  } else {
-    if(!prev){ return {label:null, seg:4, pctMode:null, pct:null}; }
-    const c = (current - prev) / prev * 100; // 전일가 대비 등락률
-    let label=null, seg=4;
-    if(c < -5){ label='매도 수익화 가능'; seg=5; }
-    else if(c <= 0){ label='버티기'; seg=4; }
-    else if(c <= 15){ label='상승장'; seg=6; }
-    else if(c <= 30){ label='매우상승장'; seg=7; }
-    else { label='매우상승장'; seg=7; }
-    return {label, seg, pctMode:'prev', pct:c};
+    const d = (avg - current) / avg * 100;
+    if(d > 10) return {label:'留ㅼ슦 ?먯젅 異붿쿇', seg:0, pct:-d};
+    if(d > 7)  return {label:'?먯젅 異붿쿇',      seg:1, pct:-d};
+    if(d > 5)  return {label:null,             seg:2, pct:-d};
+    return              {label:'臾쇳?湲?異붿쿇',   seg:3, pct:-d};
   }
+  if(!prev) return {label:null, seg:4, pct:null};
+  const c = (current - prev) / prev * 100;
+  if(c < -5)  return {label:'留ㅻ룄 ?섏씡??媛??, seg:5, pct:c};
+  if(c <= 0)  return {label:'踰꾪떚湲?,           seg:4, pct:c};
+  if(c <= 15) return {label:'?곸듅??,           seg:6, pct:c};
+  return              {label:'留ㅼ슦?곸듅??,       seg:7, pct:c};
 }
+const SEG_LABELS = ['留ㅼ슦?먯젅','?먯젅','愿留?,'臾쇳?湲?,'踰꾪떚湲?,'?섏씡?붽???,'?곸듅??,'留ㅼ슦?곸듅??];
 
-const SEG_LABELS = ['매우손절','손절','관망','물타기','버티기','수익화가능','상승장','매우상승장'];
-
-// ---------- fetch price (best-effort, CORS may block) ----------
+// ---------- price fetch ----------
 async function fetchPrice(code){
   try{
     const res = await fetch(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code}`);
-    if(!res.ok) throw new Error('bad response');
+    if(!res.ok) throw new Error();
     const data = await res.json();
     const d = data?.datas?.[0];
-    if(!d) throw new Error('no data');
+    if(!d) throw new Error();
     const current = Number(d.closePrice ?? d.now ?? d.tradePrice);
-    const prev = Number(d.basePrice ?? d.standardPrice ?? d.previousClose);
-    if(!current || !prev) throw new Error('parse fail');
+    const prev    = Number(d.basePrice ?? d.standardPrice ?? d.previousClose);
+    if(!current || !prev) throw new Error();
     return {current, prev};
-  }catch(e){
-    return null;
-  }
+  }catch(e){ return null; }
 }
 
-let autoFetchWorked = null; // null=unknown, true/false
-
+let autoFetchWorked = null;
 async function refreshAll(){
-  if(holdings.length === 0) return;
+  if(!holdings.length) return;
   let anySuccess = false;
   for(const h of holdings){
-    const result = await fetchPrice(h.code);
-    if(result){
-      h.current = result.current;
-      h.prev = result.prev;
-      h.manual = false;
-      h.lastUpdate = Date.now();
-      anySuccess = true;
-    }
+    const r = await fetchPrice(h.code);
+    if(r){ h.current = r.current; h.prev = r.prev; h.manual = false; h.lastUpdate = Date.now(); anySuccess = true; }
   }
-  if(anySuccess){
-    autoFetchWorked = true;
-    setStatusText(true);
-  } else if(holdings.some(h=>!h.manual)){
-    autoFetchWorked = false;
-    setStatusText(false);
-  }
-  await saveHoldings();
+  if(anySuccess){ autoFetchWorked = true; setStatus(true); }
+  else if(holdings.some(h=>!h.manual)){ autoFetchWorked = false; setStatus(false); }
+  saveHoldings();
   render();
 }
-
-function setStatusText(ok){
-  const dot = document.getElementById('liveDot');
-  const txt = document.getElementById('statusText');
-  if(ok){
-    dot.className = 'dot live';
-    txt.textContent = '자동조회 정상 — 60초마다 갱신 중';
-  } else {
-    dot.className = 'dot';
-    txt.textContent = '자동조회 실패 — 현재가/전일가를 직접 입력해주세요';
-  }
+function setStatus(ok){
+  document.getElementById('liveDot').className = ok ? 'dot live' : 'dot';
+  document.getElementById('statusText').textContent = ok
+    ? '?먮룞議고쉶 ?뺤긽 ??60珥덈쭏??媛깆떊 以?
+    : '?먮룞議고쉶 ?ㅽ뙣 ???꾩옱媛/?꾩씪媛瑜?吏곸젒 ?낅젰?댁＜?몄슂';
 }
 
-// ---------- rendering ----------
-function fmtPct(p){
-  if(p===null || p===undefined) return '-';
-  const sign = p>0?'+':'';
-  return `${sign}${p.toFixed(2)}%`;
+// ---------- trade ----------
+function applyBuy(idx, buyQty, buyPrice){
+  const h = holdings[idx];
+  const oldQty = Number(h.qty) || 0;
+  const oldAvg = Number(h.avg) || 0;
+  const newQty = oldQty + buyQty;
+  h.avg = newQty > 0 ? Math.round((oldAvg * oldQty + buyPrice * buyQty) / newQty) : oldAvg;
+  h.qty = newQty;
 }
-function pctClass(p){
-  if(p===null || p===undefined) return 'pct-flat';
-  if(p>0) return 'pct-up';
-  if(p<0) return 'pct-down';
-  return 'pct-flat';
+function applySell(idx, sellQty, sellPrice){
+  const h = holdings[idx];
+  const qty = Number(h.qty) || 0;
+  const avg = Number(h.avg) || 0;
+  const actual = Math.min(sellQty, qty);
+  const pnl = (sellPrice - avg) * actual;
+  h.qty = qty - actual;
+  h.lastSell = {qty: actual, price: sellPrice, pnl, at: Date.now()};
+}
+
+// ---------- format ----------
+function fmtNum(n){ return (n == null || isNaN(n)) ? '-' : Number(n).toLocaleString(); }
+function fmtPct(p){ return p == null ? '-' : `${p>0?'+':''}${p.toFixed(2)}%`; }
+function fmtPnl(n){
+  if(n == null || isNaN(n)) return '-';
+  return `${n>0?'+':''}${Math.round(n).toLocaleString()}??;
+}
+function pctCls(p){ return !p ? 'pct-flat' : p>0 ? 'pct-up' : 'pct-down'; }
+function pnlCls(n){ return !n||isNaN(n) ? 'pnl-flat' : n>0 ? 'pnl-up' : 'pnl-down'; }
+function fmtDate(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${d.getFullYear()}.${mm}.${dd} ${hh}:${mi}`;
+}
+
+// ---------- render ----------
+function segColor(s){
+  return ['#3A6BD9','#4C8DFF','#3A3F48','#FFC857','#4A4F58','#FFA84A','#E84142','#FF5A5C'][s] ?? '#3A3F48';
 }
 
 function render(){
   const container = document.getElementById('cards');
-  const empty = document.getElementById('emptyMsg');
+  const empty     = document.getElementById('emptyMsg');
   container.innerHTML = '';
   empty.style.display = holdings.length ? 'none' : 'block';
 
   holdings.forEach((h, idx)=>{
-    const st = computeStatus(Number(h.avg), Number(h.current), Number(h.prev));
-    const card = document.createElement('div');
-    card.className = 'card';
+    const avg     = Number(h.avg)     || 0;
+    const current = Number(h.current) || 0;
+    const prev    = Number(h.prev)    || 0;
+    const qty     = Number(h.qty)     || 0;
+
+    const st = computeStatus(avg, current||null, prev||null);
+    const diffAvg  = (avg && current) ? (current-avg)/avg*100 : null;
+    const diffPrev = (current && prev) ? (current-prev)/prev*100 : null;
+    const invest   = (avg && qty) ? avg*qty : null;
+    const evalAmt  = (current && qty) ? current*qty : null;
+    const pnlAmt   = (invest != null && evalAmt != null) ? evalAmt-invest : null;
+    const manual   = h.manual ? '<span style="color:var(--gold);font-size:10px">(?섎룞)</span>' : '';
 
     const badgeHtml = st.label
       ? `<span class="badge" style="background:${segColor(st.seg)};color:#0F1115">${st.label}</span>`
-      : `<span class="badge none">관망</span>`;
+      : `<span class="badge none">愿留?/span>`;
 
-    const diffAvg = h.current ? ((Number(h.current)-Number(h.avg))/Number(h.avg)*100) : null;
-    const diffPrev = (h.current && h.prev) ? ((Number(h.current)-Number(h.prev))/Number(h.prev)*100) : null;
+    let lastSellHtml = '';
+    if(h.lastSell){
+      const s = h.lastSell;
+      const cls = s.pnl >= 0 ? 'pnl-up' : 'pnl-down';
+      lastSellHtml = `
+        <div class="last-sell">
+          <span>吏곸쟾 留ㅻ룄 ${fmtDate(s.at)} 쨌 ${s.qty}二?@ ${fmtNum(s.price)}</span>
+          <span class="pnl-val ${cls}">${fmtPnl(s.pnl)}</span>
+        </div>`;
+    }
 
+    const card = document.createElement('div');
+    card.className = 'card';
     card.innerHTML = `
       <div class="card-top">
         <div class="name-block">
@@ -367,84 +520,246 @@ function render(){
       </div>
       <div class="numbers">
         <div class="box">
-          <label>매입평균단가</label>
-          <div class="val">${h.avg ? Number(h.avg).toLocaleString() : '-'}</div>
+          <label>留ㅼ엯?됯퇏?④?</label>
+          <div class="val">${fmtNum(avg)}</div>
         </div>
         <div class="box">
-          <label>현재가 ${h.manual?'(수동)':''}</label>
-          <input type="number" data-idx="${idx}" data-field="current" value="${h.current ?? ''}" placeholder="현재가 입력">
+          <label>?꾩옱媛 ${manual}</label>
+          <input type="number" data-idx="${idx}" data-field="current" value="${h.current??''}" placeholder="?낅젰">
         </div>
         <div class="box">
-          <label>전일가 ${h.manual?'(수동)':''}</label>
-          <input type="number" data-idx="${idx}" data-field="prev" value="${h.prev ?? ''}" placeholder="전일가 입력">
+          <label>?꾩씪媛 ${manual}</label>
+          <input type="number" data-idx="${idx}" data-field="prev" value="${h.prev??''}" placeholder="?낅젰">
         </div>
         <div class="box">
-          <label>매입가 대비 / 전일가 대비</label>
+          <label>留ㅼ엯媛 ?鍮?/ ?꾩씪媛 ?鍮?/label>
           <div class="val">
-            <span class="${pctClass(diffAvg)}">${fmtPct(diffAvg)}</span> /
-            <span class="${pctClass(diffPrev)}">${fmtPct(diffPrev)}</span>
+            <span class="${pctCls(diffAvg)}">${fmtPct(diffAvg)}</span> /
+            <span class="${pctCls(diffPrev)}">${fmtPct(diffPrev)}</span>
           </div>
+        </div>
+        <div class="box">
+          <label>蹂댁쑀?섎웾</label>
+          <input type="number" data-idx="${idx}" data-field="qty" value="${qty||''}" placeholder="?섎웾">
+        </div>
+        <div class="box">
+          <label>?ъ옄?먭툑</label>
+          <div class="val">${fmtNum(invest)}</div>
+        </div>
+        <div class="box">
+          <label>?됯?湲덉븸</label>
+          <div class="val">${evalAmt!=null ? fmtNum(Math.round(evalAmt)) : '-'}</div>
+        </div>
+        <div class="box">
+          <label>?됯??먯씡</label>
+          <div class="val ${pnlCls(pnlAmt)}">${fmtPnl(pnlAmt)}</div>
         </div>
       </div>
       <div class="gauge">
-        ${[0,1,2,3,4,5,6,7].map(i=>`<div class="seg s${i} ${st.seg===i?'active':''}"><span>${SEG_LABELS[i]}</span></div>`).join('')}
+        ${[0,1,2,3,4,5,6,7].map(i=>`<div class="seg s${i}${st.seg===i?' active':''}"><span>${SEG_LABELS[i]}</span></div>`).join('')}
       </div>
+      <div class="trade-bar">
+        <div class="trade-section">
+          <span class="trade-label buy">留ㅼ닔</span>
+          <input type="number" class="t-qty" placeholder="?섎웾" min="1">
+          <input type="number" class="t-price" placeholder="?④?">
+          <button class="trade-btn buy-btn" data-idx="${idx}" data-action="buy">?곸슜</button>
+        </div>
+        <div class="trade-section">
+          <span class="trade-label sell">留ㅻ룄</span>
+          <input type="number" class="t-qty" placeholder="?섎웾" min="1">
+          <input type="number" class="t-price" placeholder="留ㅻ룄媛">
+          <button class="trade-btn sell-btn" data-idx="${idx}" data-action="sell">?곸슜</button>
+        </div>
+      </div>
+      ${lastSellHtml}
       <div class="card-foot">
-        <span>${h.lastUpdate ? '갱신: '+new Date(h.lastUpdate).toLocaleTimeString() : '아직 갱신 안됨'}</span>
-        <button data-remove="${idx}">삭제</button>
+        <div class="foot-dates">
+          <span>?깅줉: ${fmtDate(h.addedAt)}</span>
+          <span>${h.lastUpdate ? '媛깆떊: '+fmtDate(h.lastUpdate) : '?꾩쭅 媛깆떊 ?덈맖'}</span>
+        </div>
+        <button data-remove="${idx}">??젣</button>
       </div>
     `;
     container.appendChild(card);
   });
 
-  // bind manual inputs
-  container.querySelectorAll('input[data-field]').forEach(inp=>{
-    inp.addEventListener('change', async (e)=>{
-      const idx = Number(e.target.dataset.idx);
-      const field = e.target.dataset.field;
-      const v = e.target.value;
-      holdings[idx][field] = v === '' ? null : Number(v);
+  // ?꾩옱媛 / ?꾩씪媛 ?섎룞 ?낅젰
+  container.querySelectorAll('input[data-field="current"], input[data-field="prev"]').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const idx = +e.target.dataset.idx, field = e.target.dataset.field, v = e.target.value;
+      holdings[idx][field] = v==='' ? null : Number(v);
       holdings[idx].manual = true;
       holdings[idx].lastUpdate = Date.now();
-      await saveHoldings();
-      render();
+      saveHoldings(); render();
     });
   });
-  // bind remove
+
+  // 蹂댁쑀?섎웾 吏곸젒 ?섏젙
+  container.querySelectorAll('input[data-field="qty"]').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const idx = +e.target.dataset.idx, v = e.target.value;
+      holdings[idx].qty = v==='' ? 0 : Number(v);
+      saveHoldings(); render();
+    });
+  });
+
+  // 留ㅼ닔 / 留ㅻ룄
+  container.querySelectorAll('button[data-action]').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      const idx    = +e.target.dataset.idx;
+      const action = e.target.dataset.action;
+      const sec    = e.target.closest('.trade-section');
+      const qty    = Number(sec.querySelector('.t-qty').value);
+      const price  = Number(sec.querySelector('.t-price').value);
+      if(!qty || qty <= 0 || !price || price <= 0){
+        alert('?섎웾怨?媛寃⑹쓣 ?щ컮瑜닿쾶 ?낅젰?댁＜?몄슂.'); return;
+      }
+      if(action === 'buy') applyBuy(idx, qty, price);
+      else                 applySell(idx, qty, price);
+      sec.querySelector('.t-qty').value = '';
+      sec.querySelector('.t-price').value = '';
+      saveHoldings(); render();
+    });
+  });
+
+  // ??젣
   container.querySelectorAll('button[data-remove]').forEach(btn=>{
-    btn.addEventListener('click', async (e)=>{
-      const idx = Number(e.target.dataset.remove);
-      holdings.splice(idx,1);
-      await saveHoldings();
-      render();
+    btn.addEventListener('click', async e=>{
+      holdings.splice(+e.target.dataset.remove, 1);
+      saveHoldings(); render();
     });
   });
 }
 
-function segColor(seg){
-  const colors = ['#3A6BD9','#4C8DFF','#3A3F48','#FFC857','#4A4F58','#FFA84A','#E84142','#FF5A5C'];
-  return colors[seg] ?? '#3A3F48';
+// ---------- 醫낅ぉ 寃??----------
+let selCode = '', selName = '';
+let searchTimer = null;
+
+document.getElementById('inSearch').addEventListener('input', e=>{
+  clearTimeout(searchTimer);
+  selCode = ''; selName = '';
+  document.getElementById('addBtn').disabled = true;
+  document.getElementById('selectedInfo').style.display = 'none';
+  const q = e.target.value.trim();
+  if(q.length < 1){ closeDD(); return; }
+  searchTimer = setTimeout(()=> doSearch(q), 280);
+});
+
+async function doSearch(q){
+  try{
+    const url = `https://ac.finance.naver.com/ac?q=${encodeURIComponent(q)}&q_enc=UTF-8&t_koreng=1&st=111&r_format=json&r_enc=UTF-8&r_lt=111&r_unicode=0`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error();
+    const data = await res.json();
+    const items = (data.items || []).slice(0, 8).map(i=>({name:i[0], code:i[2]})).filter(i=>i.code);
+    showDD(items);
+  }catch(e){
+    // CORS ???ㅽ뙣 ??吏곸젒 ?낅젰 ?덈궡
+    showDD([], true);
+  }
 }
 
-// ---------- add form ----------
-document.getElementById('addForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const code = document.getElementById('inCode').value.trim();
-  const name = document.getElementById('inName').value.trim();
+function showDD(items, corsBlocked=false){
+  const dd = document.getElementById('searchDropdown');
+  dd.innerHTML = '';
+  if(corsBlocked){
+    dd.innerHTML = `<li class="search-no-result">?먮룞寃??遺덇? ??醫낅ぉ肄붾뱶(6?먮━)瑜?吏곸젒 ?낅젰 ???좏깮?댁＜?몄슂<br><small style="color:#565C66">?먮뒗 濡쒖뺄 ?뚯씪濡??댁뼱蹂댁꽭??/small></li>`;
+    // 吏곸젒 ?낅젰 肄붾뱶 泥섎━
+    const searchInput = document.getElementById('inSearch').value.trim();
+    if(/^\d{6}$/.test(searchInput)){
+      const li = document.createElement('li');
+      li.innerHTML = `<span>肄붾뱶 ${searchInput} 吏곸젒 ?ъ슜</span><span class="s-code">${searchInput}</span>`;
+      li.addEventListener('click', ()=>{
+        selCode = searchInput; selName = searchInput;
+        selectStock(searchInput, searchInput);
+      });
+      dd.appendChild(li);
+    }
+    dd.classList.add('open'); return;
+  }
+  if(!items.length){ dd.classList.remove('open'); return; }
+  items.forEach(item=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${item.name}</span><span class="s-code">${item.code}</span>`;
+    li.addEventListener('click', ()=> selectStock(item.code, item.name));
+    dd.appendChild(li);
+  });
+  dd.classList.add('open');
+}
+function closeDD(){ document.getElementById('searchDropdown').classList.remove('open'); }
+document.addEventListener('click', e=>{ if(!e.target.closest('.search-wrap')) closeDD(); });
+
+function selectStock(code, name){
+  selCode = code; selName = name;
+  document.getElementById('inSearch').value = `${name} (${code})`;
+  document.getElementById('selectedLabel').textContent = `${name} 쨌 ${code}`;
+  document.getElementById('selectedInfo').style.display = 'block';
+  document.getElementById('addBtn').disabled = false;
+  closeDD();
+}
+
+// ---------- 異붽? ----------
+document.getElementById('addBtn').addEventListener('click', async ()=>{
+  if(!selCode || !selName){ alert('醫낅ぉ??癒쇱? 寃?됲빐???좏깮?댁＜?몄슂.'); return; }
   const avg = document.getElementById('inAvg').value.trim();
-  if(!code || !name || !avg) return;
-  holdings.push({code, name, avg: Number(avg), current:null, prev:null, manual:true, lastUpdate:null});
-  await saveHoldings();
-  render();
-  e.target.reset();
+  const qty = document.getElementById('inQty').value.trim();
+  if(!avg || !qty){ alert('留ㅼ엯?됯퇏?④?? ?섎웾???낅젰?댁＜?몄슂.'); return; }
+  holdings.push({
+    code: selCode, name: selName,
+    avg: Number(avg), qty: Number(qty),
+    current: null, prev: null,
+    manual: true, lastUpdate: null,
+    addedAt: Date.now(),
+    lastSell: null
+  });
+  saveHoldings(); render();
+  document.getElementById('inSearch').value = '';
+  document.getElementById('inAvg').value = '';
+  document.getElementById('inQty').value = '';
+  document.getElementById('selectedInfo').style.display = 'none';
+  document.getElementById('addBtn').disabled = true;
+  selCode = ''; selName = '';
   refreshAll();
+});
+
+// ---------- 내보내기 / 가져오기 ----------
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const json = JSON.stringify(holdings, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `positions_${date}.json`;
+  a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFile').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw new Error();
+      if(holdings.length && !confirm(`현재 데이터(${holdings.length}개)를 덮어쓸까요?`)){
+        e.target.value = ''; return;
+      }
+      holdings = data;
+      holdings.forEach(h=>{ if(h.qty==null) h.qty=0; if(!h.addedAt) h.addedAt=Date.now(); });
+      saveHoldings(); render();
+    }catch{
+      alert('올바른 JSON 파일이 아닙니다.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
 });
 
 // ---------- init ----------
-loadHoldings().then(()=>{
-  refreshAll();
-  setInterval(refreshAll, REFRESH_MS);
-});
+loadHoldings();
+refreshAll();
+setInterval(refreshAll, REFRESH_MS);
 </script>
 </body>
 </html>
