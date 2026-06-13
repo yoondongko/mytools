@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 포지션 신호등</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1115;
+    --card:#181B20;
+    --card-border:#262B33;
+    --up:#E84142;     /* 한국 증시 상승색(빨강) */
+    --down:#4C8DFF;   /* 한국 증시 하락색(파랑) */
+    --neutral:#8A8F98;
+    --gold:#FFC857;
+    --text:#ECEEF1;
+    --text-dim:#9AA0AC;
+    --very-down:#3A6BD9;
+    --very-up:#FF5A5C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans KR',sans-serif;
+    min-height:100vh;
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  header{margin-bottom:28px;}
+  h1{
+    font-family:'Space Grotesk','Noto Sans KR',sans-serif;
+    font-size:28px;
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.02em;
+  }
+  header p{color:var(--text-dim);margin:0;font-size:14px;}
+  .status-line{
+    display:flex;align-items:center;gap:8px;
+    margin-top:14px;font-size:13px;color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--neutral);}
+  .dot.live{background:var(--up);box-shadow:0 0 0 0 rgba(232,65,66,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(232,65,66,.5);}
+    70%{box-shadow:0 0 0 6px rgba(232,65,66,0);}
+    100%{box-shadow:0 0 0 0 rgba(232,65,66,0);}
+  }
+
+  .add-form{
+    display:grid;
+    grid-template-columns:90px 1fr 130px auto;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:24px;
+  }
+  .add-form input{
+    background:#0F1115;
+    border:1px solid var(--card-border);
+    border-radius:8px;
+    padding:10px 12px;
+    color:var(--text);
+    font-size:14px;
+    font-family:'JetBrains Mono','Noto Sans KR',monospace;
+    width:100%;
+  }
+  .add-form input::placeholder{color:#565C66;}
+  .add-form button{
+    background:var(--up);
+    border:none;
+    border-radius:8px;
+    color:#fff;
+    font-weight:700;
+    font-size:14px;
+    padding:10px 18px;
+    cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;
+    transition:opacity .15s;
+  }
+  .add-form button:hover{opacity:.85;}
+
+  .legend{
+    display:flex;flex-wrap:wrap;gap:10px;
+    margin-bottom:24px;font-size:12px;color:var(--text-dim);
+  }
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .card-top{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:14px;flex-wrap:wrap;gap:10px;
+  }
+  .name-block .name{font-size:17px;font-weight:700;font-family:'Space Grotesk','Noto Sans KR',sans-serif;}
+  .name-block .code{font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+  .badge{
+    font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;
+    font-family:'Noto Sans KR',sans-serif;white-space:nowrap;
+  }
+  .badge.none{background:#262B33;color:var(--text-dim);}
+
+  .numbers{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    margin-bottom:16px;
+  }
+  .numbers .box{
+    background:#0F1115;border:1px solid var(--card-border);
+    border-radius:10px;padding:8px 10px;
+  }
+  .numbers .box label{
+    display:block;font-size:11px;color:var(--text-dim);
+    margin-bottom:4px;font-family:'Noto Sans KR',sans-serif;
+  }
+  .numbers .box .val{font-size:15px;font-weight:700;}
+  .numbers .box input{
+    background:transparent;border:none;color:var(--text);
+    font-size:15px;font-weight:700;width:100%;font-family:'JetBrains Mono',monospace;
+    padding:0;
+  }
+  .numbers .box input:focus{outline:none;color:var(--gold);}
+  .pct-up{color:var(--up);}
+  .pct-down{color:var(--down);}
+  .pct-flat{color:var(--neutral);}
+
+  /* 게이지: 8개 구간 */
+  .gauge{
+    display:flex;gap:3px;height:34px;border-radius:8px;overflow:hidden;
+  }
+  .seg{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:#0F1115;
+    opacity:.28;transition:all .25s ease;
+    text-align:center;line-height:1.1;padding:2px;
+  }
+  .seg span{display:block;}
+  .seg.active{opacity:1;transform:scaleY(1.08);box-shadow:0 0 14px rgba(255,255,255,.18);}
+  .seg.s0{background:var(--very-down);}
+  .seg.s1{background:var(--down);}
+  .seg.s2{background:#3A3F48;color:var(--text-dim);}
+  .seg.s3{background:var(--gold);}
+  .seg.s4{background:#4A4F58;color:var(--text-dim);}
+  .seg.s5{background:#FFA84A;}
+  .seg.s6{background:var(--up);}
+  .seg.s7{background:var(--very-up);}
+
+  .card-foot{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;font-size:11px;color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .card-foot button{
+    background:none;border:none;color:#565C66;cursor:pointer;
+    font-size:12px;font-family:'Noto Sans KR',sans-serif;
+    text-decoration:underline;padding:0;
+  }
+  .card-foot button:hover{color:var(--down);}
+
+  .empty{
+    text-align:center;color:var(--text-dim);padding:60px 20px;
+    border:1px dashed var(--card-border);border-radius:14px;font-size:14px;
+  }
+
+  .notice{
+    margin-top:28px;font-size:12px;color:var(--text-dim);
+    line-height:1.7;border-top:1px solid var(--card-border);padding-top:16px;
+  }
+  .notice b{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>내 포지션 신호등</h1>
+    <p>매입평균단가 대비 / 전일가 대비 등락률을 기준으로 매매 신호를 알려줍니다.</p>
+    <div class="status-line">
+      <span class="dot" id="liveDot"></span>
+      <span id="statusText">대기 중</span>
+    </div>
+  </header>
+
+  <form class="add-form" id="addForm">
+    <input id="inCode" placeholder="종목코드 (6자리)" maxlength="6" inputmode="numeric" required>
+    <input id="inName" placeholder="종목명 (예: 삼성전자)" required>
+    <input id="inAvg" placeholder="매입평균단가" inputmode="numeric" required>
+    <button type="submit">추가</button>
+  </form>
+
+  <div class="legend">
+    <span><i style="background:var(--very-down)"></i>매우 손절 추천</span>
+    <span><i style="background:var(--down)"></i>손절 추천</span>
+    <span><i style="background:#3A3F48"></i>관망</span>
+    <span><i style="background:var(--gold)"></i>물타기 추천</span>
+    <span><i style="background:#4A4F58"></i>버티기</span>
+    <span><i style="background:#FFA84A"></i>매도 수익화 가능</span>
+    <span><i style="background:var(--up)"></i>상승장</span>
+    <span><i style="background:var(--very-up)"></i>매우상승장</span>
+  </div>
+
+  <div id="cards"></div>
+  <div class="empty" id="emptyMsg" style="display:none;">
+    아직 등록된 종목이 없습니다. 위에서 종목코드, 종목명, 매입평균단가를 입력해 추가하세요.
+  </div>
+
+  <div class="notice">
+    <b>참고</b><br>
+    · 가격은 60초마다 자동 조회를 시도합니다. 브라우저 환경의 CORS 정책상 외부 시세 API 접속이 차단될 수 있으며, 이 경우 상단 상태가 "자동조회 실패 — 수동 입력 필요"로 표시됩니다.<br>
+    · 자동조회가 실패하면 카드의 <b>현재가 / 전일가</b> 칸을 직접 클릭해 값을 입력하세요. 수동 입력 값으로 신호가 즉시 갱신됩니다.<br>
+    · 종목 정보(코드/이름/매입단가)는 이 브라우저에만 저장됩니다.
+  </div>
+</div>
+
+<script>
+const REFRESH_MS = 60000;
+let holdings = [];
+
+// ---------- storage ----------
+async function loadHoldings(){
+  try{
+    const r = await window.storage.get('holdings', false);
+    if(r && r.value){ holdings = JSON.parse(r.value); }
+  }catch(e){ holdings = []; }
+  render();
+}
+async function saveHoldings(){
+  try{ await window.storage.set('holdings', JSON.stringify(holdings), false); }
+  catch(e){ console.error('저장 실패', e); }
+}
+
+// ---------- status logic ----------
+// returns {label, seg, pctMode, pct}
+function computeStatus(avg, current, prev){
+  if(!avg || !current){ return {label:null, seg:null, pctMode:null, pct:null}; }
+
+  if(current < avg){
+    const d = (avg - current) / avg * 100; // 매입단가 대비 하락률(양수)
+    let label=null, seg=2;
+    if(d > 10){ label='매우 손절 추천'; seg=0; }
+    else if(d > 7){ label='손절 추천'; seg=1; }
+    else if(d > 5){ label=null; seg=2; }
+    else if(d > 0){ label='물타기 추천'; seg=3; }
+    return {label, seg, pctMode:'avg', pct:-d};
+  } else {
+    if(!prev){ return {label:null, seg:4, pctMode:null, pct:null}; }
+    const c = (current - prev) / prev * 100; // 전일가 대비 등락률
+    let label=null, seg=4;
+    if(c < -5){ label='매도 수익화 가능'; seg=5; }
+    else if(c <= 0){ label='버티기'; seg=4; }
+    else if(c <= 15){ label='상승장'; seg=6; }
+    else if(c <= 30){ label='매우상승장'; seg=7; }
+    else { label='매우상승장'; seg=7; }
+    return {label, seg, pctMode:'prev', pct:c};
+  }
+}
+
+const SEG_LABELS = ['매우손절','손절','관망','물타기','버티기','수익화가능','상승장','매우상승장'];
+
+// ---------- fetch price (best-effort, CORS may block) ----------
+async function fetchPrice(code){
+  try{
+    const res = await fetch(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code}`);
+    if(!res.ok) throw new Error('bad response');
+    const data = await res.json();
+    const d = data?.datas?.[0];
+    if(!d) throw new Error('no data');
+    const current = Number(d.closePrice ?? d.now ?? d.tradePrice);
+    const prev = Number(d.basePrice ?? d.standardPrice ?? d.previousClose);
+    if(!current || !prev) throw new Error('parse fail');
+    return {current, prev};
+  }catch(e){
+    return null;
+  }
+}
+
+let autoFetchWorked = null; // null=unknown, true/false
+
+async function refreshAll(){
+  if(holdings.length === 0) return;
+  let anySuccess = false;
+  for(const h of holdings){
+    const result = await fetchPrice(h.code);
+    if(result){
+      h.current = result.current;
+      h.prev = result.prev;
+      h.manual = false;
+      h.lastUpdate = Date.now();
+      anySuccess = true;
+    }
+  }
+  if(anySuccess){
+    autoFetchWorked = true;
+    setStatusText(true);
+  } else if(holdings.some(h=>!h.manual)){
+    autoFetchWorked = false;
+    setStatusText(false);
+  }
+  await saveHoldings();
+  render();
+}
+
+function setStatusText(ok){
+  const dot = document.getElementById('liveDot');
+  const txt = document.getElementById('statusText');
+  if(ok){
+    dot.className = 'dot live';
+    txt.textContent = '자동조회 정상 — 60초마다 갱신 중';
+  } else {
+    dot.className = 'dot';
+    txt.textContent = '자동조회 실패 — 현재가/전일가를 직접 입력해주세요';
+  }
+}
+
+// ---------- rendering ----------
+function fmtPct(p){
+  if(p===null || p===undefined) return '-';
+  const sign = p>0?'+':'';
+  return `${sign}${p.toFixed(2)}%`;
+}
+function pctClass(p){
+  if(p===null || p===undefined) return 'pct-flat';
+  if(p>0) return 'pct-up';
+  if(p<0) return 'pct-down';
+  return 'pct-flat';
+}
+
+function render(){
+  const container = document.getElementById('cards');
+  const empty = document.getElementById('emptyMsg');
+  container.innerHTML = '';
+  empty.style.display = holdings.length ? 'none' : 'block';
+
+  holdings.forEach((h, idx)=>{
+    const st = computeStatus(Number(h.avg), Number(h.current), Number(h.prev));
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const badgeHtml = st.label
+      ? `<span class="badge" style="background:${segColor(st.seg)};color:#0F1115">${st.label}</span>`
+      : `<span class="badge none">관망</span>`;
+
+    const diffAvg = h.current ? ((Number(h.current)-Number(h.avg))/Number(h.avg)*100) : null;
+    const diffPrev = (h.current && h.prev) ? ((Number(h.current)-Number(h.prev))/Number(h.prev)*100) : null;
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="name-block">
+          <div class="name">${h.name}</div>
+          <div class="code">${h.code}</div>
+        </div>
+        ${badgeHtml}
+      </div>
+      <div class="numbers">
+        <div class="box">
+          <label>매입평균단가</label>
+          <div class="val">${h.avg ? Number(h.avg).toLocaleString() : '-'}</div>
+        </div>
+        <div class="box">
+          <label>현재가 ${h.manual?'(수동)':''}</label>
+          <input type="number" data-idx="${idx}" data-field="current" value="${h.current ?? ''}" placeholder="현재가 입력">
+        </div>
+        <div class="box">
+          <label>전일가 ${h.manual?'(수동)':''}</label>
+          <input type="number" data-idx="${idx}" data-field="prev" value="${h.prev ?? ''}" placeholder="전일가 입력">
+        </div>
+        <div class="box">
+          <label>매입가 대비 / 전일가 대비</label>
+          <div class="val">
+            <span class="${pctClass(diffAvg)}">${fmtPct(diffAvg)}</span> /
+            <span class="${pctClass(diffPrev)}">${fmtPct(diffPrev)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="gauge">
+        ${[0,1,2,3,4,5,6,7].map(i=>`<div class="seg s${i} ${st.seg===i?'active':''}"><span>${SEG_LABELS[i]}</span></div>`).join('')}
+      </div>
+      <div class="card-foot">
+        <span>${h.lastUpdate ? '갱신: '+new Date(h.lastUpdate).toLocaleTimeString() : '아직 갱신 안됨'}</span>
+        <button data-remove="${idx}">삭제</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // bind manual inputs
+  container.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const idx = Number(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      const v = e.target.value;
+      holdings[idx][field] = v === '' ? null : Number(v);
+      holdings[idx].manual = true;
+      holdings[idx].lastUpdate = Date.now();
+      await saveHoldings();
+      render();
+    });
+  });
+  // bind remove
+  container.querySelectorAll('button[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const idx = Number(e.target.dataset.remove);
+      holdings.splice(idx,1);
+      await saveHoldings();
+      render();
+    });
+  });
+}
+
+function segColor(seg){
+  const colors = ['#3A6BD9','#4C8DFF','#3A3F48','#FFC857','#4A4F58','#FFA84A','#E84142','#FF5A5C'];
+  return colors[seg] ?? '#3A3F48';
+}
+
+// ---------- add form ----------
+document.getElementById('addForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const code = document.getElementById('inCode').value.trim();
+  const name = document.getElementById('inName').value.trim();
+  const avg = document.getElementById('inAvg').value.trim();
+  if(!code || !name || !avg) return;
+  holdings.push({code, name, avg: Number(avg), current:null, prev:null, manual:true, lastUpdate:null});
+  await saveHoldings();
+  render();
+  e.target.reset();
+  refreshAll();
+});
+
+// ---------- init ----------
+loadHoldings().then(()=>{
+  refreshAll();
+  setInterval(refreshAll, REFRESH_MS);
+});
+</script>
+</body>
+</html>
