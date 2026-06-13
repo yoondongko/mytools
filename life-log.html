@@ -38,7 +38,7 @@
     }
 
     /* Today summary */
-    .status-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .status-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .status-cell { background: #f2f2f7; border-radius: 8px; padding: 10px 6px; text-align: center; }
     .status-cell .lbl { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
     .status-cell .val { font-size: 15px; font-weight: 600; }
@@ -126,6 +126,56 @@
     .card-header .card-title { margin-bottom: 0; }
     .del-btn { background: #fff0f0; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; }
 
+    /* Todo */
+    .todo-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .todo-add-row input {
+      flex: 1;
+      border: 1.5px solid #e5e5ea;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .todo-add-row input:focus { border-color: #007aff; }
+    .todo-add-submit {
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .todo-item:last-child { border-bottom: none; }
+    .todo-check {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .todo-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .todo-text.done {
+      text-decoration: line-through;
+      color: #c7c7cc;
+    }
+    .todo-del { background: none; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+
     /* Activity */
     .act-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
     .act-input-row { display: flex; align-items: center; gap: 8px; }
@@ -135,6 +185,44 @@
     .act-btns { display: flex; flex-wrap: wrap; gap: 8px; }
     .act-btn { background: #f2f2f7; border: none; border-radius: 20px; padding: 9px 14px; font-size: 14px; cursor: pointer; color: #1d1d1f; }
     .act-btn:active { opacity: 0.7; }
+
+    /* Edit modal */
+    #edit-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+      padding: 20px;
+    }
+    #edit-overlay.open { display: flex; }
+    #edit-box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      width: 100%;
+      max-width: 340px;
+    }
+    #edit-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+    .edit-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .edit-field label { font-size: 12px; color: #8e8e93; }
+    .edit-field input, .edit-field select {
+      border: 1.5px solid #e5e5ea;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+    }
+    .edit-field input:focus, .edit-field select:focus { border-color: #007aff; }
+    .edit-field-row { display: flex; gap: 6px; }
+    .edit-field-row input { flex: 1; }
+    .edit-btns { display: flex; gap: 8px; margin-top: 4px; }
+    .edit-btns button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    #edit-cancel { background: #f2f2f7; color: #1d1d1f; }
+    #edit-save   { background: #007aff; color: white; }
 
     #auth-overlay {
       position: fixed; inset: 0;
@@ -181,6 +269,17 @@
 </head>
 <body>
 
+<div id="edit-overlay">
+  <div id="edit-box">
+    <h3 id="edit-title">기록 수정</h3>
+    <div id="edit-fields"></div>
+    <div class="edit-btns">
+      <button id="edit-cancel" onclick="closeEditModal()">취소</button>
+      <button id="edit-save"   onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div id="auth-overlay">
   <div id="auth-box">
     <h2>라이프 로그</h2>
@@ -205,6 +304,7 @@
       <div class="status-cell"><div class="lbl">기상</div><div class="val" id="s-end">—</div></div>
       <div class="status-cell"><div class="lbl">수면</div><div class="val" id="s-dur">—</div></div>
       <div class="status-cell"><div class="lbl">복약</div><div class="val" id="s-med">0</div></div>
+      <div class="status-cell"><div class="lbl">할일</div><div class="val" id="s-todo">0</div></div>
     </div>
   </div>
 
@@ -215,9 +315,18 @@
     </div>
     <div class="dt-row" style="margin-bottom:12px;">
       <input type="date" id="log-date">
-      <input type="time" id="log-time">
+      <input type="time" id="log-time" step="300">
     </div>
     <div class="med-row" id="med-row"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">할일</div>
+    <div class="todo-add-row">
+      <input type="text" id="todo-input" placeholder="할일 입력" onkeydown="if(event.key==='Enter')addTodo()">
+      <button class="todo-add-submit" onclick="addTodo()">추가</button>
+    </div>
+    <div id="todo-list"></div>
   </div>
 
   <div class="card">
@@ -267,7 +376,7 @@
 
   <div class="card">
     <div class="card-header">
-      <div class="card-title">최근 기록</div>
+      <div class="card-title" style="cursor:pointer;" onclick="toggleLogCollapse()">최근 기록 <span id="log-toggle-icon">▾</span></div>
       <button class="now-btn" style="color:#ff3b30;" onclick="clearAllLogs()">전체 삭제</button>
     </div>
     <div id="log-items"></div>
@@ -315,8 +424,12 @@ let activeChart = 'duration';
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : { medNames: [], logs: [] };
-  } catch { return { medNames: [], logs: [] }; }
+    const d = raw ? JSON.parse(raw) : {};
+    if (!d.medNames) d.medNames = [];
+    if (!d.logs) d.logs = [];
+    if (!d.todos) d.todos = [];
+    return d;
+  } catch { return { medNames: [], logs: [], todos: [] }; }
 }
 
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
@@ -440,6 +553,45 @@ function logSleepBlock() {
   render();
 }
 
+function addTodo() {
+  const input = document.getElementById('todo-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const data = load();
+  data.todos.push({ id: String(Date.now()), text, done: false });
+  save(data);
+  input.value = '';
+  renderTodos(data);
+}
+
+function toggleTodo(id) {
+  const data = load();
+  const t = data.todos.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) {
+    data.logs.push({ id: String(Date.now()), type: 'todo', text: t.text, ts: new Date().toISOString() });
+    data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  }
+  save(data);
+  render();
+}
+
+function deleteTodo(id) {
+  const data = load();
+  data.todos = data.todos.filter(t => t.id !== id);
+  save(data);
+  renderTodos(data);
+}
+
+let logCollapsed = false;
+
+function toggleLogCollapse() {
+  logCollapsed = !logCollapsed;
+  document.getElementById('log-items').style.display = logCollapsed ? 'none' : '';
+  document.getElementById('log-toggle-icon').textContent = logCollapsed ? '▸' : '▾';
+}
+
 function clearAllLogs() {
   if (!confirm('모든 기록을 삭제할까요?')) return;
   const data = load();
@@ -465,6 +617,102 @@ function removeMedName(name) {
   render();
 }
 
+let editingId = null;
+
+function openEditModal(id) {
+  const data = load();
+  const l = data.logs.find(l => l.id === id);
+  if (!l) return;
+  editingId = id;
+
+  const tsDate = l.ts.slice(0, 10);
+  const tsTime = l.ts.slice(11, 16);
+
+  const titles = { med: '복약 수정', sleep_start: '취침 시각 수정', sleep_end: '기상 시각 수정', activity: '시간 기록 수정', todo: '할일 완료 수정' };
+  document.getElementById('edit-title').textContent = titles[l.type] || '기록 수정';
+
+  let html = '';
+  if (l.type === 'med') {
+    html = `
+      <div class="edit-field"><label>약 이름</label><input id="ef-name" value="${l.name}"></div>
+      <div class="edit-field"><label>시각</label><div class="edit-field-row">
+        <input type="date" id="ef-date" value="${tsDate}">
+        <input type="time" id="ef-time" step="300" value="${tsTime}">
+      </div></div>`;
+  } else if (l.type === 'sleep_start' || l.type === 'sleep_end') {
+    html = `
+      <div class="edit-field"><label>시각</label><div class="edit-field-row">
+        <input type="date" id="ef-date" value="${tsDate}">
+        <input type="time" id="ef-time" value="${tsTime}">
+      </div></div>`;
+  } else if (l.type === 'activity') {
+    const edDate = l.endTs.slice(0, 10);
+    const edTime = l.endTs.slice(11, 16);
+    const cats = ['공부','자기계발','생활','가족','취업준비','기타'];
+    html = `
+      <div class="edit-field"><label>카테고리</label>
+        <select id="ef-cat">${cats.map(c => `<option${c === l.category ? ' selected' : ''}>${c}</option>`).join('')}</select>
+      </div>
+      <div class="edit-field"><label>시작</label><div class="edit-field-row">
+        <input type="date" id="ef-date" value="${tsDate}">
+        <input type="time" id="ef-time" step="300" value="${tsTime}">
+      </div></div>
+      <div class="edit-field"><label>종료</label><div class="edit-field-row">
+        <input type="date" id="ef-edate" value="${edDate}">
+        <input type="time" id="ef-etime" step="300" value="${edTime}">
+      </div></div>
+      <div class="edit-field"><label>내용</label><input id="ef-content" value="${l.content || ''}"></div>`;
+  } else if (l.type === 'todo') {
+    html = `
+      <div class="edit-field"><label>할일</label><input id="ef-text" value="${l.text}"></div>
+      <div class="edit-field"><label>완료 시각</label><div class="edit-field-row">
+        <input type="date" id="ef-date" value="${tsDate}">
+        <input type="time" id="ef-time" value="${tsTime}">
+      </div></div>`;
+  }
+  document.getElementById('edit-fields').innerHTML = html;
+  document.getElementById('edit-overlay').classList.add('open');
+}
+
+function closeEditModal() {
+  editingId = null;
+  document.getElementById('edit-overlay').classList.remove('open');
+}
+
+function saveEdit() {
+  if (!editingId) return;
+  const data = load();
+  const l = data.logs.find(l => l.id === editingId);
+  if (!l) return;
+
+  const getVal = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+
+  const buildTs = (dateId, timeId) => {
+    const d = getVal(dateId), t = getVal(timeId);
+    return d && t ? new Date(`${d}T${t}`).toISOString() : l.ts;
+  };
+
+  if (l.type === 'med') {
+    l.name = getVal('ef-name') || l.name;
+    l.ts = buildTs('ef-date', 'ef-time');
+  } else if (l.type === 'sleep_start' || l.type === 'sleep_end') {
+    l.ts = buildTs('ef-date', 'ef-time');
+  } else if (l.type === 'activity') {
+    l.category = getVal('ef-cat') || l.category;
+    l.ts    = buildTs('ef-date',  'ef-time');
+    l.endTs = buildTs('ef-edate', 'ef-etime');
+    l.content = getVal('ef-content');
+  } else if (l.type === 'todo') {
+    l.text = getVal('ef-text') || l.text;
+    l.ts = buildTs('ef-date', 'ef-time');
+  }
+
+  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  save(data);
+  closeEditModal();
+  render();
+}
+
 function deleteLog(id) {
   const data = load();
   data.logs = data.logs.filter(l => l.id !== id);
@@ -484,6 +732,7 @@ function render() {
   const data = load();
   renderSummary(data);
   renderMedRow(data);
+  renderTodos(data);
   renderChart(data);
   renderLogs(data);
 }
@@ -517,6 +766,22 @@ function renderSummary(data) {
 
   const cnt = data.logs.filter(l => l.type === 'med' && isToday(l.ts)).length;
   document.getElementById('s-med').textContent = String(cnt);
+  const todoCnt = data.logs.filter(l => l.type === 'todo' && isToday(l.ts)).length;
+  document.getElementById('s-todo').textContent = String(todoCnt);
+}
+
+function renderTodos(data) {
+  const el = document.getElementById('todo-list');
+  if (!data.todos.length) {
+    el.innerHTML = '<div class="empty-msg">할일이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = data.todos.map(t => `
+    <div class="todo-item">
+      <button class="todo-check" onclick="toggleTodo('${t.id}')">${t.done ? '✅' : '⬜'}</button>
+      <span class="todo-text${t.done ? ' done' : ''}">${t.text}</span>
+      <button class="todo-del" onclick="deleteTodo('${t.id}')">삭제</button>
+    </div>`).join('');
 }
 
 function renderMedRow(data) {
@@ -552,6 +817,7 @@ function renderMedRow(data) {
 
 function renderLogs(data) {
   const el = document.getElementById('log-items');
+  el.style.display = logCollapsed ? 'none' : '';
   const recent = [...data.logs].reverse().slice(0, 30);
   if (!recent.length) {
     el.innerHTML = '<div class="empty-msg">기록이 없습니다</div>';
@@ -572,11 +838,15 @@ function renderLogs(data) {
       const dur = ((new Date(l.endTs) - new Date(l.ts)) / 3600000).toFixed(1);
       label = `${ACT_EMOJI[l.category] || '⏱'} ${l.category}${l.content ? ' · ' + l.content : ''} (${dur}h)`;
       timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}–${fmtTime(l.endTs)}`;
+    } else if (l.type === 'todo') {
+      label = `✅ ${l.text}`;
+      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
     }
     return `<div class="log-row">
       <span style="flex:1; margin-right:8px;">${label}</span>
       <span class="log-meta">
         <span class="log-time-str">${timeStr}</span>
+        <button class="del-btn" style="background:#e8f3ff; color:#007aff; margin-right:4px;" onclick="openEditModal('${l.id}')">수정</button>
         <button class="del-btn" onclick="deleteLog('${l.id}')">삭제</button>
       </span>
     </div>`;
@@ -818,6 +1088,10 @@ function importData(e) {
   reader.readAsText(file);
   e.target.value = '';
 }
+
+document.getElementById('edit-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-overlay')) closeEditModal();
+});
 
 setNow();
 setActNow();
