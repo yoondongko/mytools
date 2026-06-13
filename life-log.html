@@ -7,37 +7,22 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f2f2f7;
-      color: #1d1d1f;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f2f2f7; color: #1d1d1f; }
     header {
-      background: white;
-      padding: 14px 20px;
-      border-bottom: 1px solid #e5e5ea;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      background: white; padding: 14px 20px; border-bottom: 1px solid #e5e5ea;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10;
     }
     header a { color: #007aff; text-decoration: none; font-size: 15px; }
     header h1 { font-size: 17px; font-weight: 600; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; }
 
     .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-    .card-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 12px;
-    }
+    .card-title { font-size: 12px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-header .card-title { margin-bottom: 0; }
 
-    /* Today summary */
+    /* Today */
+    .today-datetime { font-size: 12px; color: #8e8e93; text-align: right; margin-bottom: 10px; }
     .status-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .status-cell { background: #f2f2f7; border-radius: 8px; padding: 10px 6px; text-align: center; }
     .status-cell .lbl { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
@@ -46,135 +31,46 @@
     /* Medication */
     .med-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .med-chip { position: relative; display: inline-flex; }
-    .med-btn {
-      background: #e8f3ff;
-      color: #007aff;
-      border: none;
-      border-radius: 20px;
-      padding: 9px 16px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-    }
+    .med-btn { background: #e8f3ff; color: #007aff; border: none; border-radius: 20px; padding: 9px 16px; font-size: 14px; font-weight: 500; cursor: pointer; }
     .med-btn:active { opacity: 0.7; }
-    .med-del {
-      position: absolute;
-      top: -5px; right: -5px;
-      width: 17px; height: 17px;
-      background: #ff3b30;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 11px;
-      cursor: pointer;
-      line-height: 17px;
-      text-align: center;
-      padding: 0;
-    }
-    .add-med-btn {
-      background: #f2f2f7;
-      color: #8e8e93;
-      border: none;
-      border-radius: 20px;
-      padding: 9px 16px;
-      font-size: 14px;
-      cursor: pointer;
-    }
+    .add-med-btn { background: #f2f2f7; color: #8e8e93; border: none; border-radius: 20px; padding: 9px 16px; font-size: 14px; cursor: pointer; }
 
     /* Charts */
-    .tab-row { display: flex; gap: 6px; margin-bottom: 12px; }
-    .tab {
-      background: #f2f2f7;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 13px;
-      cursor: pointer;
-      color: #1d1d1f;
-    }
+    .chart-tab-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .tab { background: #f2f2f7; border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; color: #1d1d1f; }
     .tab.active { background: #007aff; color: white; font-weight: 500; }
+    .period-row { display: flex; gap: 5px; margin-bottom: 12px; }
+    .period-btn { background: #f2f2f7; border: none; border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: #8e8e93; }
+    .period-btn.active { background: #4e6880; color: white; font-weight: 500; }
     .chart-wrap { position: relative; height: 220px; }
 
     /* Log list */
-    .log-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 0;
-      border-bottom: 1px solid #f2f2f7;
-      font-size: 14px;
-    }
+    .log-filter-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .log-filter-btn { background: #f2f2f7; border: none; border-radius: 14px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #1d1d1f; }
+    .log-filter-btn.active { background: #007aff; color: white; }
+    .log-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f2f2f7; font-size: 14px; }
     .log-row:last-child { border-bottom: none; }
-    .log-meta { display: flex; align-items: center; gap: 8px; }
+    .log-meta { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .log-time-str { font-size: 12px; color: #8e8e93; }
-    .del-btn { background: none; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; }
+    .now-btn { background: none; border: none; color: #007aff; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .del-btn { background: #fff0f0; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; }
+    .edit-log-btn { background: #e8f3ff; border: none; color: #007aff; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; }
     .empty-msg { font-size: 14px; color: #8e8e93; padding: 4px 0; }
 
     .dt-row { display: flex; gap: 8px; }
-    .dt-row input {
-      flex: 1;
-      border: 1.5px solid #e5e5ea;
-      border-radius: 8px;
-      padding: 9px 10px;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-    }
+    .dt-row input { flex: 1; border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 9px 10px; font-size: 14px; outline: none; font-family: inherit; }
     .dt-row input:focus { border-color: #007aff; }
-    .now-btn { background: none; border: none; color: #007aff; font-size: 12px; font-weight: 500; cursor: pointer; }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .card-header .card-title { margin-bottom: 0; }
-    .del-btn { background: #fff0f0; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; }
 
     /* Todo */
     .todo-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    .todo-add-row input {
-      flex: 1;
-      border: 1.5px solid #e5e5ea;
-      border-radius: 8px;
-      padding: 9px 10px;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-    }
+    .todo-add-row input { flex: 1; border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 9px 10px; font-size: 14px; outline: none; font-family: inherit; }
     .todo-add-row input:focus { border-color: #007aff; }
-    .todo-add-submit {
-      background: #007aff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 14px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .todo-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 0;
-      border-bottom: 1px solid #f2f2f7;
-    }
+    .todo-add-submit { background: #007aff; color: white; border: none; border-radius: 8px; padding: 9px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .todo-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f2f2f7; }
     .todo-item:last-child { border-bottom: none; }
-    .todo-check {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0;
-      flex-shrink: 0;
-    }
-    .todo-text {
-      flex: 1;
-      font-size: 14px;
-      line-height: 1.4;
-    }
-    .todo-text.done {
-      text-decoration: line-through;
-      color: #c7c7cc;
-    }
-    .todo-del { background: none; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+    .todo-check { background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1; padding: 0; flex-shrink: 0; }
+    .todo-text { flex: 1; font-size: 14px; line-height: 1.4; }
+    .todo-text.done { text-decoration: line-through; color: #c7c7cc; }
 
     /* Activity */
     .act-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -187,95 +83,98 @@
     .act-btn:active { opacity: 0.7; }
 
     /* Edit modal */
-    #edit-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9000;
-      padding: 20px;
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      display: none; align-items: center; justify-content: center; padding: 20px;
     }
-    #edit-overlay.open { display: flex; }
-    #edit-box {
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      width: 100%;
-      max-width: 340px;
+    .modal-overlay.open { display: flex; }
+    #edit-overlay { z-index: 9200; }
+    #manage-overlay { z-index: 9100; }
+    #todo-time-overlay { z-index: 9300; }
+    .modal-box {
+      background: white; border-radius: 14px; padding: 20px;
+      width: 100%; max-width: 340px; max-height: 82vh; overflow-y: auto;
     }
-    #edit-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+    .modal-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
     .edit-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
     .edit-field label { font-size: 12px; color: #8e8e93; }
     .edit-field input, .edit-field select {
-      border: 1.5px solid #e5e5ea;
-      border-radius: 8px;
-      padding: 9px 10px;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-      width: 100%;
+      border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 9px 10px;
+      font-size: 14px; outline: none; font-family: inherit; width: 100%;
     }
     .edit-field input:focus, .edit-field select:focus { border-color: #007aff; }
     .edit-field-row { display: flex; gap: 6px; }
     .edit-field-row input { flex: 1; }
-    .edit-btns { display: flex; gap: 8px; margin-top: 4px; }
-    .edit-btns button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
-    #edit-cancel { background: #f2f2f7; color: #1d1d1f; }
-    #edit-save   { background: #007aff; color: white; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 4px; }
+    .modal-btns button { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-cancel { background: #f2f2f7; color: #1d1d1f; }
+    .btn-primary { background: #007aff; color: white; }
+    .btn-close { width: 100%; margin-top: 10px; padding: 11px; background: #f2f2f7; color: #1d1d1f; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
-    #auth-overlay {
-      position: fixed; inset: 0;
-      background: #f2f2f7;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    #auth-box {
-      background: white;
-      border-radius: 16px;
-      padding: 32px 28px;
-      width: 280px;
-      text-align: center;
-    }
+    /* Manage modal list */
+    .manage-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid #f2f2f7; }
+    .manage-item:last-child { border-bottom: none; }
+    .manage-item-label { flex: 1; font-size: 14px; }
+    .manage-color { width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 2px; background: none; flex-shrink: 0; }
+    .manage-del-btn { background: #fff0f0; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; flex-shrink: 0; }
+    .manage-add-row { display: flex; gap: 6px; margin-top: 12px; }
+    .manage-add-row input { flex: 1; border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; font-family: inherit; }
+    .manage-add-row input:focus { border-color: #007aff; }
+    .manage-add-submit { background: #007aff; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+    /* Auth */
+    #auth-overlay { position: fixed; inset: 0; background: #f2f2f7; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    #auth-box { background: white; border-radius: 16px; padding: 32px 28px; width: 280px; text-align: center; }
     #auth-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
     #auth-box p { font-size: 13px; color: #8e8e93; margin-bottom: 20px; }
-    #auth-input {
-      width: 100%;
-      border: 1.5px solid #e5e5ea;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 18px;
-      letter-spacing: 6px;
-      text-align: center;
-      outline: none;
-      margin-bottom: 12px;
-    }
+    #auth-input { width: 100%; border: 1.5px solid #e5e5ea; border-radius: 10px; padding: 12px 14px; font-size: 18px; letter-spacing: 6px; text-align: center; outline: none; margin-bottom: 12px; }
     #auth-input:focus { border-color: #007aff; }
-    #auth-confirm {
-      width: 100%;
-      background: #007aff;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    #auth-confirm { width: 100%; background: #007aff; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; }
     #auth-err { font-size: 13px; color: #ff3b30; margin-top: 10px; min-height: 18px; }
   </style>
 </head>
 <body>
 
-<div id="edit-overlay">
-  <div id="edit-box">
+<!-- Edit modal -->
+<div id="edit-overlay" class="modal-overlay">
+  <div class="modal-box">
     <h3 id="edit-title">기록 수정</h3>
     <div id="edit-fields"></div>
-    <div class="edit-btns">
-      <button id="edit-cancel" onclick="closeEditModal()">취소</button>
-      <button id="edit-save"   onclick="saveEdit()">저장</button>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+      <button class="btn-primary" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage modal (약 / 할일 항목 관리) -->
+<div id="manage-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3 id="manage-title">항목 수정</h3>
+    <div id="manage-list"></div>
+    <div class="manage-add-row">
+      <input id="manage-input" placeholder="새 항목 입력" onkeydown="if(event.key==='Enter')manageAdd()">
+      <button class="manage-add-submit" onclick="manageAdd()">추가</button>
+    </div>
+    <button class="btn-close" onclick="closeManageModal()">닫기</button>
+  </div>
+</div>
+
+<!-- Todo completion time modal -->
+<div id="todo-time-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3 id="todo-time-title">완료 시각</h3>
+    <p style="font-size:13px; color:#8e8e93; margin-bottom:14px;" id="todo-time-label"></p>
+    <div class="edit-field">
+      <label>완료 시각</label>
+      <div class="edit-field-row">
+        <input type="date" id="tt-date">
+        <input type="time" id="tt-time" step="300">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeTodoTimeModal()">취소</button>
+      <button class="btn-primary" onclick="confirmTodoCheck()">완료</button>
     </div>
   </div>
 </div>
@@ -298,7 +197,10 @@
 <div class="container">
 
   <div class="card">
-    <div class="card-title">오늘</div>
+    <div class="card-header">
+      <div class="card-title">오늘</div>
+      <div class="today-datetime" id="today-datetime"></div>
+    </div>
     <div class="status-row">
       <div class="status-cell"><div class="lbl">취침</div><div class="val" id="s-start">—</div></div>
       <div class="status-cell"><div class="lbl">기상</div><div class="val" id="s-end">—</div></div>
@@ -311,7 +213,10 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">약</div>
-      <button class="now-btn" onclick="setNow()">지금으로</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="now-btn" onclick="openManageModal('med')">항목 수정</button>
+        <button class="now-btn" onclick="setNow()">지금으로</button>
+      </div>
     </div>
     <div class="dt-row" style="margin-bottom:12px;">
       <input type="date" id="log-date">
@@ -321,9 +226,12 @@
   </div>
 
   <div class="card">
-    <div class="card-title">할일</div>
+    <div class="card-header">
+      <div class="card-title">할일</div>
+      <button class="now-btn" onclick="openManageModal('todo')">항목 수정</button>
+    </div>
     <div class="todo-add-row">
-      <input type="text" id="todo-input" placeholder="할일 입력" onkeydown="if(event.key==='Enter')addTodo()">
+      <input type="text" id="todo-input" placeholder="할일 빠른 추가" onkeydown="if(event.key==='Enter')addTodo()">
       <button class="todo-add-submit" onclick="addTodo()">추가</button>
     </div>
     <div id="todo-list"></div>
@@ -363,12 +271,17 @@
 
   <div class="card">
     <div class="card-title">그래프</div>
-    <div class="tab-row">
+    <div class="chart-tab-row">
       <button class="tab active" data-chart="duration" onclick="switchChart('duration')">수면 시간</button>
       <button class="tab" data-chart="timing" onclick="switchChart('timing')">수면 타이밍</button>
       <button class="tab" data-chart="med" onclick="switchChart('med')">복약 타이밍</button>
       <button class="tab" data-chart="activity" onclick="switchChart('activity')">시간 분석</button>
       <button class="tab" data-chart="report" onclick="switchChart('report')">종합 리포트</button>
+    </div>
+    <div class="period-row">
+      <button class="period-btn active" data-period="week" onclick="switchPeriod('week')">주간</button>
+      <button class="period-btn" data-period="month" onclick="switchPeriod('month')">월간</button>
+      <button class="period-btn" data-period="year" onclick="switchPeriod('year')">년간</button>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
     <div id="report-wrap" style="display:none;"></div>
@@ -378,6 +291,9 @@
     <div class="card-header">
       <div class="card-title" style="cursor:pointer;" onclick="toggleLogCollapse()">최근 기록 <span id="log-toggle-icon">▾</span></div>
       <button class="now-btn" style="color:#ff3b30;" onclick="clearAllLogs()">전체 삭제</button>
+    </div>
+    <div id="log-filter-wrap">
+      <div class="log-filter-row" id="log-filter-row"></div>
     </div>
     <div id="log-items"></div>
   </div>
@@ -418,6 +334,9 @@ function checkAuth() {
 const KEY = 'lifeLog_v1';
 let chartInst = null;
 let activeChart = 'duration';
+let chartPeriod = 'week';
+let logCollapsed = false;
+let activeLogFilter = 'all';
 
 // ── Data ──────────────────────────────────────────────────────────
 
@@ -425,11 +344,12 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     const d = raw ? JSON.parse(raw) : {};
-    if (!d.medNames) d.medNames = [];
-    if (!d.logs) d.logs = [];
-    if (!d.todos) d.todos = [];
+    if (!d.medNames)  d.medNames  = [];
+    if (!d.medColors) d.medColors = {};
+    if (!d.logs)      d.logs      = [];
+    if (!d.todos)     d.todos     = [];
     return d;
-  } catch { return { medNames: [], logs: [], todos: [] }; }
+  } catch { return { medNames: [], medColors: {}, logs: [], todos: [] }; }
 }
 
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
@@ -440,26 +360,42 @@ function fmtTime(iso) {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
-
 function fmtDate(iso) {
   const d = new Date(iso);
   return `${d.getMonth()+1}/${d.getDate()}`;
 }
-
+function fmtMonth(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth()+1}월`;
+}
 function toHour(iso) {
   const d = new Date(iso);
   return d.getHours() + d.getMinutes() / 60;
 }
-
 function isToday(iso) {
   const d = new Date(iso), t = new Date();
   return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
 }
 
+function getChartDays() {
+  const today = new Date();
+  if (chartPeriod === 'week') {
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    });
+  } else if (chartPeriod === 'month') {
+    const y = today.getFullYear(), m = today.getMonth();
+    const cnt = new Date(y, m + 1, 0).getDate();
+    return Array.from({length: cnt}, (_, i) => `${m+1}/${i+1}`);
+  } else {
+    return Array.from({length: 12}, (_, i) => `${i+1}월`);
+  }
+}
+
 function last14Days() {
-  return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (13 - i));
+  return Array.from({length: 14}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (13 - i));
     return `${d.getMonth()+1}/${d.getDate()}`;
   });
 }
@@ -471,19 +407,48 @@ function getSessions(logs) {
     if (l.type === 'sleep_start') {
       pending = l;
     } else if (l.type === 'sleep_end' && pending) {
-      sessions.push({ start: pending.ts, end: l.ts });
+      sessions.push({ startId: pending.id, endId: l.id, start: pending.ts, end: l.ts });
       pending = null;
     }
   }
-  if (pending) sessions.push({ start: pending.ts, end: null });
+  if (pending) sessions.push({ startId: pending.id, endId: null, start: pending.ts, end: null });
   return sessions;
+}
+
+function makeEmojiImg(emoji, size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.font = `${size - 2}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, size / 2, size / 2);
+  const img = new Image();
+  img.src = c.toDataURL();
+  return img;
+}
+
+const MED_DEFAULT_COLORS = ['#7898ae','#a8d85a','#f5d020','#f472b6','#c5a8e8','#5bb3f0','#90abc0','#f0a060'];
+
+// ── Today clock ───────────────────────────────────────────────────
+
+function updateClock() {
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  const yy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const day = days[now.getDay()];
+  const hh = String(now.getHours()).padStart(2,'0');
+  const min = String(now.getMinutes()).padStart(2,'0');
+  const el = document.getElementById('today-datetime');
+  if (el) el.textContent = `${yy}.${mm}.${dd} (${day}) ${hh}:${min}`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────
 
 const ACT_CATEGORIES = ['공부', '자기계발', '생활', '가족', '취업준비', '기타'];
 const ACT_COLORS     = ['#a8d85a', '#f5d020', '#5bb3f0', '#c5a8e8', '#f472b6', '#90abc0'];
-// 공부=연두, 자기계발=개나리, 생활=밝은블루, 가족=연보라, 취업준비=핑크, 기타=스카이블루그레이
 const ACT_EMOJI      = { '공부':'📚', '자기계발':'🌱', '생활':'🏠', '가족':'👨‍👩‍👧', '취업준비':'💼', '기타':'⭐' };
 
 function setNow() {
@@ -525,7 +490,7 @@ function logActivity(category) {
   if (!sd || !st || !ed || !et) { alert('시작/종료 시각을 모두 입력해주세요'); return; }
   const startTs = new Date(`${sd}T${st}`).toISOString();
   const endTs   = new Date(`${ed}T${et}`).toISOString();
-  if (new Date(endTs) <= new Date(startTs)) { alert('종료 시각이 시작 시각보다 늦어야 합니다'); return; }
+  if (new Date(endTs) < new Date(startTs)) { alert('종료 시각이 시작 시각보다 같거나 늦어야 합니다'); return; }
   const content = document.getElementById('act-content').value.trim();
   const data = load();
   data.logs.push({ id: String(Date.now()), type: 'activity', category, ts: startTs, endTs, content });
@@ -543,7 +508,7 @@ function logSleepBlock() {
   if (!sd || !st || !ed || !et) { alert('시작/종료 시각을 모두 입력해주세요'); return; }
   const startTs = new Date(`${sd}T${st}`).toISOString();
   const endTs   = new Date(`${ed}T${et}`).toISOString();
-  if (new Date(endTs) <= new Date(startTs)) { alert('종료 시각이 시작 시각보다 늦어야 합니다'); return; }
+  if (new Date(endTs) < new Date(startTs)) { alert('종료 시각이 시작 시각보다 같거나 늦어야 합니다'); return; }
   const data = load();
   const base = Date.now();
   data.logs.push({ id: String(base),     type: 'sleep_start', ts: startTs });
@@ -552,6 +517,8 @@ function logSleepBlock() {
   save(data);
   render();
 }
+
+// ── Todo ──────────────────────────────────────────────────────────
 
 function addTodo() {
   const input = document.getElementById('todo-input');
@@ -564,15 +531,46 @@ function addTodo() {
   renderTodos(data);
 }
 
-function toggleTodo(id) {
+let pendingTodoId = null;
+
+function openTodoTimeModal(id) {
   const data = load();
   const t = data.todos.find(t => t.id === id);
   if (!t) return;
-  t.done = !t.done;
-  if (t.done) {
-    data.logs.push({ id: String(Date.now()), type: 'todo', text: t.text, ts: new Date().toISOString() });
-    data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-  }
+  pendingTodoId = id;
+  document.getElementById('todo-time-label').textContent = t.text;
+  const now = new Date();
+  document.getElementById('tt-date').value = now.toISOString().slice(0, 10);
+  document.getElementById('tt-time').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('todo-time-overlay').classList.add('open');
+}
+
+function closeTodoTimeModal() {
+  pendingTodoId = null;
+  document.getElementById('todo-time-overlay').classList.remove('open');
+}
+
+function confirmTodoCheck() {
+  if (!pendingTodoId) return;
+  const d = document.getElementById('tt-date').value;
+  const t = document.getElementById('tt-time').value;
+  const ts = (d && t) ? new Date(`${d}T${t}`).toISOString() : new Date().toISOString();
+  const data = load();
+  const todo = data.todos.find(x => x.id === pendingTodoId);
+  if (!todo) return;
+  todo.done = true;
+  data.logs.push({ id: String(Date.now()), type: 'todo', text: todo.text, ts });
+  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  save(data);
+  closeTodoTimeModal();
+  render();
+}
+
+function uncheckTodo(id) {
+  const data = load();
+  const todo = data.todos.find(t => t.id === id);
+  if (!todo) return;
+  todo.done = false;
   save(data);
   render();
 }
@@ -584,29 +582,73 @@ function deleteTodo(id) {
   renderTodos(data);
 }
 
-let logCollapsed = false;
+// ── Manage modal ──────────────────────────────────────────────────
 
-function toggleLogCollapse() {
-  logCollapsed = !logCollapsed;
-  document.getElementById('log-items').style.display = logCollapsed ? 'none' : '';
-  document.getElementById('log-toggle-icon').textContent = logCollapsed ? '▸' : '▾';
+let manageType = null;
+
+function openManageModal(type) {
+  manageType = type;
+  document.getElementById('manage-title').textContent = type === 'med' ? '약 항목 수정' : '할일 항목 수정';
+  document.getElementById('manage-input').value = '';
+  document.getElementById('manage-input').placeholder = type === 'med' ? '약 이름 입력' : '할일 입력';
+  renderManageList();
+  document.getElementById('manage-overlay').classList.add('open');
 }
 
-function clearAllLogs() {
-  if (!confirm('모든 기록을 삭제할까요?')) return;
+function closeManageModal() {
+  document.getElementById('manage-overlay').classList.remove('open');
+  manageType = null;
+  render();
+}
+
+function renderManageList() {
   const data = load();
-  data.logs = [];
+  const el = document.getElementById('manage-list');
+  if (manageType === 'med') {
+    if (!data.medNames.length) {
+      el.innerHTML = '<div class="empty-msg" style="padding:8px 0;">약 항목이 없습니다</div>';
+      return;
+    }
+    el.innerHTML = data.medNames.map((name, i) => {
+      const color = data.medColors[name] || MED_DEFAULT_COLORS[i % MED_DEFAULT_COLORS.length];
+      return `<div class="manage-item">
+        <span class="manage-item-label">💊 ${name}</span>
+        <input type="color" class="manage-color" value="${color}" title="색상 변경"
+          onchange="updateMedColor('${name}', this.value)">
+        <button class="manage-del-btn" onclick="removeMedName('${name}')">삭제</button>
+      </div>`;
+    }).join('');
+  } else {
+    if (!data.todos.length) {
+      el.innerHTML = '<div class="empty-msg" style="padding:8px 0;">할일이 없습니다</div>';
+      return;
+    }
+    el.innerHTML = data.todos.map(t => `
+      <div class="manage-item">
+        <span class="manage-item-label">${t.done ? '✅' : '⬜'} ${t.text}</span>
+        <button class="manage-del-btn" onclick="deleteTodoFromManage('${t.id}')">삭제</button>
+      </div>`).join('');
+  }
+}
+
+function manageAdd() {
+  const val = document.getElementById('manage-input').value.trim();
+  if (!val) return;
+  const data = load();
+  if (manageType === 'med') {
+    if (!data.medNames.includes(val)) { data.medNames.push(val); save(data); }
+  } else {
+    data.todos.push({ id: String(Date.now()), text: val, done: false });
+    save(data);
+  }
+  document.getElementById('manage-input').value = '';
+  renderManageList();
+}
+
+function updateMedColor(name, color) {
+  const data = load();
+  data.medColors[name] = color;
   save(data);
-  render();
-}
-
-function addMedName() {
-  const name = prompt('약 이름을 입력하세요:');
-  if (!name || !name.trim()) return;
-  const data = load();
-  const t = name.trim();
-  if (!data.medNames.includes(t)) { data.medNames.push(t); save(data); }
-  render();
 }
 
 function removeMedName(name) {
@@ -614,21 +656,31 @@ function removeMedName(name) {
   const data = load();
   data.medNames = data.medNames.filter(n => n !== name);
   save(data);
-  render();
+  renderManageList();
 }
 
-let editingId = null;
+function deleteTodoFromManage(id) {
+  const data = load();
+  data.todos = data.todos.filter(t => t.id !== id);
+  save(data);
+  renderManageList();
+}
+
+// ── Edit modal ────────────────────────────────────────────────────
+
+let editingId  = null;
+let editingId2 = null;
 
 function openEditModal(id) {
   const data = load();
   const l = data.logs.find(l => l.id === id);
   if (!l) return;
   editingId = id;
+  editingId2 = null;
 
   const tsDate = l.ts.slice(0, 10);
   const tsTime = l.ts.slice(11, 16);
-
-  const titles = { med: '복약 수정', sleep_start: '취침 시각 수정', sleep_end: '기상 시각 수정', activity: '시간 기록 수정', todo: '할일 완료 수정' };
+  const titles = { med: '복약 수정', activity: '시간 기록 수정', todo: '할일 완료 수정' };
   document.getElementById('edit-title').textContent = titles[l.type] || '기록 수정';
 
   let html = '';
@@ -639,19 +691,11 @@ function openEditModal(id) {
         <input type="date" id="ef-date" value="${tsDate}">
         <input type="time" id="ef-time" step="300" value="${tsTime}">
       </div></div>`;
-  } else if (l.type === 'sleep_start' || l.type === 'sleep_end') {
-    html = `
-      <div class="edit-field"><label>시각</label><div class="edit-field-row">
-        <input type="date" id="ef-date" value="${tsDate}">
-        <input type="time" id="ef-time" value="${tsTime}">
-      </div></div>`;
   } else if (l.type === 'activity') {
-    const edDate = l.endTs.slice(0, 10);
-    const edTime = l.endTs.slice(11, 16);
-    const cats = ['공부','자기계발','생활','가족','취업준비','기타'];
+    const edDate = l.endTs.slice(0, 10), edTime = l.endTs.slice(11, 16);
     html = `
       <div class="edit-field"><label>카테고리</label>
-        <select id="ef-cat">${cats.map(c => `<option${c === l.category ? ' selected' : ''}>${c}</option>`).join('')}</select>
+        <select id="ef-cat">${ACT_CATEGORIES.map(c => `<option${c===l.category?' selected':''}>${c}</option>`).join('')}</select>
       </div>
       <div class="edit-field"><label>시작</label><div class="edit-field-row">
         <input type="date" id="ef-date" value="${tsDate}">
@@ -674,37 +718,71 @@ function openEditModal(id) {
   document.getElementById('edit-overlay').classList.add('open');
 }
 
+function openEditSleepModal(startId, endId) {
+  const data = load();
+  const s = data.logs.find(l => l.id === startId);
+  const e = data.logs.find(l => l.id === endId);
+  if (!s) return;
+  editingId = startId;
+  editingId2 = endId || null;
+  document.getElementById('edit-title').textContent = '수면 시간 수정';
+  const sd = s.ts.slice(0, 10), st = s.ts.slice(11, 16);
+  const ed = e ? e.ts.slice(0, 10) : sd;
+  const et = e ? e.ts.slice(11, 16) : '';
+  document.getElementById('edit-fields').innerHTML = `
+    <div class="edit-field"><label>취침 시각</label><div class="edit-field-row">
+      <input type="date" id="ef-date" value="${sd}">
+      <input type="time" id="ef-time" value="${st}">
+    </div></div>
+    ${e ? `<div class="edit-field"><label>기상 시각</label><div class="edit-field-row">
+      <input type="date" id="ef-edate" value="${ed}">
+      <input type="time" id="ef-etime" value="${et}">
+    </div></div>` : ''}`;
+  document.getElementById('edit-overlay').classList.add('open');
+}
+
 function closeEditModal() {
-  editingId = null;
+  editingId = null; editingId2 = null;
   document.getElementById('edit-overlay').classList.remove('open');
 }
 
 function saveEdit() {
   if (!editingId) return;
   const data = load();
-  const l = data.logs.find(l => l.id === editingId);
-  if (!l) return;
-
   const getVal = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-
-  const buildTs = (dateId, timeId) => {
+  const buildTs = (dateId, timeId, fallback) => {
     const d = getVal(dateId), t = getVal(timeId);
-    return d && t ? new Date(`${d}T${t}`).toISOString() : l.ts;
+    return d && t ? new Date(`${d}T${t}`).toISOString() : fallback;
   };
 
-  if (l.type === 'med') {
-    l.name = getVal('ef-name') || l.name;
-    l.ts = buildTs('ef-date', 'ef-time');
-  } else if (l.type === 'sleep_start' || l.type === 'sleep_end') {
-    l.ts = buildTs('ef-date', 'ef-time');
-  } else if (l.type === 'activity') {
-    l.category = getVal('ef-cat') || l.category;
-    l.ts    = buildTs('ef-date',  'ef-time');
-    l.endTs = buildTs('ef-edate', 'ef-etime');
-    l.content = getVal('ef-content');
-  } else if (l.type === 'todo') {
-    l.text = getVal('ef-text') || l.text;
-    l.ts = buildTs('ef-date', 'ef-time');
+  if (editingId2 !== null && editingId2 !== undefined) {
+    const newSleep = buildTs('ef-date',  'ef-time',  data.logs.find(l => l.id === editingId)?.ts);
+    const newWake  = editingId2 ? buildTs('ef-edate', 'ef-etime', data.logs.find(l => l.id === editingId2)?.ts) : null;
+    if (newWake && new Date(newWake) < new Date(newSleep)) { alert('기상 시각이 취침 시각보다 같거나 늦어야 합니다'); return; }
+    const s = data.logs.find(l => l.id === editingId);
+    if (s) s.ts = newSleep;
+    if (editingId2 && newWake) {
+      const e = data.logs.find(l => l.id === editingId2);
+      if (e) e.ts = newWake;
+    }
+  } else {
+    const l = data.logs.find(l => l.id === editingId);
+    if (!l) return;
+    if (l.type === 'med') {
+      l.name = getVal('ef-name') || l.name;
+      l.ts = buildTs('ef-date', 'ef-time', l.ts);
+    } else if (l.type === 'activity') {
+      const newStart = buildTs('ef-date',  'ef-time',  l.ts);
+      const newEnd   = buildTs('ef-edate', 'ef-etime', l.endTs);
+      if (new Date(newEnd) < new Date(newStart)) { alert('종료 시각이 시작 시각보다 같거나 늦어야 합니다'); return; }
+      l.category = getVal('ef-cat') || l.category;
+      l.ts    = newStart;
+      l.endTs = newEnd;
+      l.content = getVal('ef-content');
+    } else if (l.type === 'todo') {
+      l.text = getVal('ef-text') || l.text;
+      l.ts = buildTs('ef-date', 'ef-time', l.ts);
+    }
   }
 
   data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
@@ -720,10 +798,47 @@ function deleteLog(id) {
   render();
 }
 
+function deleteSleepSession(startId, endId) {
+  if (!confirm('취침 기록을 삭제할까요?')) return;
+  const data = load();
+  data.logs = data.logs.filter(l => l.id !== startId && l.id !== endId);
+  save(data);
+  render();
+}
+
 function switchChart(type) {
   activeChart = type;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.chart === type));
   renderChart(load());
+}
+
+function switchPeriod(p) {
+  chartPeriod = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+  renderChart(load());
+}
+
+function switchLogFilter(f) {
+  activeLogFilter = f;
+  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  renderLogs(load());
+}
+
+// ── Collapse ──────────────────────────────────────────────────────
+
+function toggleLogCollapse() {
+  logCollapsed = !logCollapsed;
+  document.getElementById('log-items').style.display = logCollapsed ? 'none' : '';
+  document.getElementById('log-filter-wrap').style.display = logCollapsed ? 'none' : '';
+  document.getElementById('log-toggle-icon').textContent = logCollapsed ? '▸' : '▾';
+}
+
+function clearAllLogs() {
+  if (!confirm('모든 기록을 삭제할까요?')) return;
+  const data = load();
+  data.logs = [];
+  save(data);
+  render();
 }
 
 // ── Render ────────────────────────────────────────────────────────
@@ -734,6 +849,7 @@ function render() {
   renderMedRow(data);
   renderTodos(data);
   renderChart(data);
+  renderLogFilter();
   renderLogs(data);
 }
 
@@ -749,7 +865,6 @@ function renderSummary(data) {
       todaySess = s; break;
     }
   }
-
   if (todaySess) {
     document.getElementById('s-start').textContent = fmtTime(todaySess.start);
     if (todaySess.end) {
@@ -763,11 +878,8 @@ function renderSummary(data) {
   } else {
     ['s-start','s-end','s-dur'].forEach(id => document.getElementById(id).textContent = '—');
   }
-
-  const cnt = data.logs.filter(l => l.type === 'med' && isToday(l.ts)).length;
-  document.getElementById('s-med').textContent = String(cnt);
-  const todoCnt = data.logs.filter(l => l.type === 'todo' && isToday(l.ts)).length;
-  document.getElementById('s-todo').textContent = String(todoCnt);
+  document.getElementById('s-med').textContent = String(data.logs.filter(l => l.type === 'med' && isToday(l.ts)).length);
+  document.getElementById('s-todo').textContent = String(data.logs.filter(l => l.type === 'todo' && isToday(l.ts)).length);
 }
 
 function renderTodos(data) {
@@ -778,76 +890,115 @@ function renderTodos(data) {
   }
   el.innerHTML = data.todos.map(t => `
     <div class="todo-item">
-      <button class="todo-check" onclick="toggleTodo('${t.id}')">${t.done ? '✅' : '⬜'}</button>
+      <button class="todo-check" onclick="${t.done ? `uncheckTodo('${t.id}')` : `openTodoTimeModal('${t.id}')`}">${t.done ? '✅' : '⬜'}</button>
       <span class="todo-text${t.done ? ' done' : ''}">${t.text}</span>
-      <button class="todo-del" onclick="deleteTodo('${t.id}')">삭제</button>
     </div>`).join('');
 }
 
 function renderMedRow(data) {
   const row = document.getElementById('med-row');
   row.innerHTML = '';
-
-  data.medNames.forEach(name => {
+  data.medNames.forEach((name, i) => {
+    const color = data.medColors[name] || MED_DEFAULT_COLORS[i % MED_DEFAULT_COLORS.length];
     const chip = document.createElement('div');
     chip.className = 'med-chip';
-
     const btn = document.createElement('button');
     btn.className = 'med-btn';
     btn.textContent = `💊 ${name}`;
+    btn.style.background = color + '33';
+    btn.style.color = color;
     btn.onclick = () => logMed(name);
-
-    const del = document.createElement('button');
-    del.className = 'med-del';
-    del.textContent = '×';
-    del.title = '버튼 삭제';
-    del.onclick = e => { e.stopPropagation(); removeMedName(name); };
-
     chip.appendChild(btn);
-    chip.appendChild(del);
     row.appendChild(chip);
   });
+}
 
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-med-btn';
-  addBtn.textContent = '+ 추가';
-  addBtn.onclick = addMedName;
-  row.appendChild(addBtn);
+function renderLogFilter() {
+  const filters = [
+    { key: 'all', label: '전체' },
+    { key: 'sleep', label: '😴 취침' },
+    { key: 'med', label: '💊 복약' },
+    ...ACT_CATEGORIES.map(c => ({ key: c, label: `${ACT_EMOJI[c]} ${c}` })),
+    { key: 'todo', label: '✅ 할일' },
+  ];
+  document.getElementById('log-filter-row').innerHTML = filters.map(f =>
+    `<button class="log-filter-btn${activeLogFilter === f.key ? ' active' : ''}" data-filter="${f.key}" onclick="switchLogFilter('${f.key}')">${f.label}</button>`
+  ).join('');
 }
 
 function renderLogs(data) {
   const el = document.getElementById('log-items');
   el.style.display = logCollapsed ? 'none' : '';
-  const recent = [...data.logs].reverse().slice(0, 30);
-  if (!recent.length) {
+
+  const sessions = getSessions(data.logs);
+  const sessionStartIds = new Set(sessions.map(s => s.startId));
+  const sessionEndIds   = new Set(sessions.filter(s => s.endId).map(s => s.endId));
+  const sessionByStartId = Object.fromEntries(sessions.map(s => [s.startId, s]));
+
+  // Build display items: merge sleep pairs, filter orphan sleep_end
+  const displayItems = [];
+  for (const l of [...data.logs].reverse()) {
+    if (l.type === 'sleep_end') continue; // handled via sleep_start pairing
+    if (l.type === 'sleep_start') {
+      const sess = sessionByStartId[l.id];
+      displayItems.push({ kind: 'sleep', sess, l });
+    } else {
+      displayItems.push({ kind: 'log', l });
+    }
+  }
+
+  // Apply filter
+  const filtered = displayItems.filter(item => {
+    if (activeLogFilter === 'all') return true;
+    if (activeLogFilter === 'sleep') return item.kind === 'sleep';
+    if (activeLogFilter === 'med') return item.kind === 'log' && item.l.type === 'med';
+    if (activeLogFilter === 'todo') return item.kind === 'log' && item.l.type === 'todo';
+    // activity category
+    return item.kind === 'log' && item.l.type === 'activity' && item.l.category === activeLogFilter;
+  }).slice(0, 30);
+
+  if (!filtered.length) {
     el.innerHTML = '<div class="empty-msg">기록이 없습니다</div>';
     return;
   }
-  el.innerHTML = recent.map(l => {
-    let label, timeStr;
-    if (l.type === 'med') {
-      label = `💊 ${l.name}`;
-      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
-    } else if (l.type === 'sleep_start') {
-      label = '😴 취침';
-      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
-    } else if (l.type === 'sleep_end') {
-      label = '☀️ 기상';
-      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
-    } else if (l.type === 'activity') {
-      const dur = ((new Date(l.endTs) - new Date(l.ts)) / 3600000).toFixed(1);
-      label = `${ACT_EMOJI[l.category] || '⏱'} ${l.category}${l.content ? ' · ' + l.content : ''} (${dur}h)`;
-      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}–${fmtTime(l.endTs)}`;
-    } else if (l.type === 'todo') {
-      label = `✅ ${l.text}`;
-      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+
+  el.innerHTML = filtered.map(item => {
+    let label, timeStr, editBtn, delBtn;
+    if (item.kind === 'sleep') {
+      const sess = item.sess;
+      if (sess.end) {
+        const h = ((new Date(sess.end) - new Date(sess.start)) / 3600000).toFixed(1);
+        label = `😴 취침 ${fmtTime(sess.start)} → ☀️ 기상 ${fmtTime(sess.end)} (${h}h)`;
+        timeStr = `${fmtDate(sess.start)}`;
+        editBtn = `<button class="edit-log-btn" onclick="openEditSleepModal('${sess.startId}','${sess.endId}')">수정</button>`;
+        delBtn  = `<button class="del-btn" onclick="deleteSleepSession('${sess.startId}','${sess.endId}')">삭제</button>`;
+      } else {
+        label = `😴 취침중 (${fmtTime(sess.start)}~)`;
+        timeStr = fmtDate(sess.start);
+        editBtn = `<button class="edit-log-btn" onclick="openEditSleepModal('${sess.startId}',null)">수정</button>`;
+        delBtn  = `<button class="del-btn" onclick="deleteLog('${sess.startId}')">삭제</button>`;
+      }
+    } else {
+      const l = item.l;
+      if (l.type === 'med') {
+        label = `💊 ${l.name}`;
+        timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+      } else if (l.type === 'activity') {
+        const dur = ((new Date(l.endTs) - new Date(l.ts)) / 3600000).toFixed(1);
+        label = `${ACT_EMOJI[l.category] || '⏱'} ${l.category}${l.content ? ' · ' + l.content : ''} (${dur}h)`;
+        timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}–${fmtTime(l.endTs)}`;
+      } else if (l.type === 'todo') {
+        label = `✅ ${l.text}`;
+        timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+      }
+      editBtn = `<button class="edit-log-btn" onclick="openEditModal('${l.id}')">수정</button>`;
+      delBtn  = `<button class="del-btn" onclick="deleteLog('${l.id}')">삭제</button>`;
     }
     return `<div class="log-row">
-      <span style="flex:1; margin-right:8px;">${label}</span>
+      <span style="flex:1; margin-right:8px; font-size:13px;">${label}</span>
       <span class="log-meta">
         <span class="log-time-str">${timeStr}</span>
-        <button class="del-btn" style="background:#e8f3ff; color:#007aff; margin-right:4px;" onclick="openEditModal('${l.id}')">수정</button>
-        <button class="del-btn" onclick="deleteLog('${l.id}')">삭제</button>
+        ${editBtn}${delBtn}
       </span>
     </div>`;
   }).join('');
@@ -857,69 +1008,97 @@ function renderLogs(data) {
 
 function renderChart(data) {
   if (chartInst) { chartInst.destroy(); chartInst = null; }
-  document.getElementById('chart').style.display = activeChart === 'report' ? 'none' : 'block';
-  document.getElementById('report-wrap').style.display = activeChart === 'report' ? 'block' : 'none';
-  if (activeChart === 'report') { renderReport(data); return; }
+  const isReport = activeChart === 'report';
+  document.getElementById('chart').style.display = isReport ? 'none' : 'block';
+  document.getElementById('report-wrap').style.display = isReport ? 'block' : 'none';
+  if (isReport) { renderReport(data); return; }
+
   const ctx = document.getElementById('chart').getContext('2d');
-  const days = last14Days();
+  const days = getChartDays();
+  const isYear = chartPeriod === 'year';
+
+  const keyFn = isYear ? fmtMonth : fmtDate;
 
   if (activeChart === 'duration') {
     const sessions = getSessions(data.logs);
-    const durByDay = {};
+    const durByKey = {};
+    const cntByKey = {};
     sessions.forEach(s => {
       if (!s.end) return;
-      const key = fmtDate(s.end);
-      if (days.includes(key)) {
-        durByDay[key] = (durByDay[key] || 0) + (new Date(s.end) - new Date(s.start)) / 3600000;
-      }
+      const key = keyFn(s.end);
+      if (!days.includes(key)) return;
+      durByKey[key] = (durByKey[key] || 0) + (new Date(s.end) - new Date(s.start)) / 3600000;
+      cntByKey[key] = (cntByKey[key] || 0) + 1;
     });
-
+    const vals = days.map(d => {
+      if (durByKey[d] == null) return null;
+      return isYear ? +(durByKey[d] / cntByKey[d]).toFixed(2) : +durByKey[d].toFixed(2);
+    });
     chartInst = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: days,
-        datasets: [{
-          label: '수면 시간 (h)',
-          data: days.map(d => durByDay[d] != null ? +durByDay[d].toFixed(2) : null),
-          backgroundColor: '#4e6880',
-          borderRadius: 5,
-        }]
+        datasets: [{ label: isYear ? '평균 수면 (h)' : '수면 시간 (h)', data: vals, backgroundColor: '#4e6880', borderRadius: 5 }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, max: 14, ticks: { callback: v => v + 'h' } }
-        }
+        scales: { y: { beginAtZero: true, max: 14, ticks: { callback: v => v + 'h' } } }
       }
     });
 
   } else if (activeChart === 'timing') {
     const sessions = getSessions(data.logs);
     const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
-    const sleepPts = [], wakePts = [];
+    const sleepPts = [], wakePts = [], linePairs = [];
 
     sessions.forEach(s => {
-      const si = dayIdx[fmtDate(s.start)];
-      if (si != null) sleepPts.push({ x: si, y: toHour(s.start) });
-      if (s.end) {
-        const ei = dayIdx[fmtDate(s.end)];
-        if (ei != null) wakePts.push({ x: ei, y: toHour(s.end) });
+      const sk = keyFn(s.start);
+      const si = dayIdx[sk];
+      if (si != null) {
+        sleepPts.push({ x: si, y: toHour(s.start) });
+        if (s.end) {
+          const ek = keyFn(s.end);
+          const ei = dayIdx[ek];
+          if (ei != null) {
+            wakePts.push({ x: ei, y: toHour(s.end) });
+            linePairs.push([{ x: si, y: toHour(s.start) }, { x: ei, y: toHour(s.end) }]);
+          }
+        }
       }
     });
+
+    const moonImg = makeEmojiImg('🌙', 22);
+    const sunImg  = makeEmojiImg('☀️', 22);
+
+    const lineDatasets = linePairs.map(pair => ({
+      type: 'line',
+      data: pair,
+      borderColor: 'rgba(78,104,128,0.35)',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      showLine: true,
+      tension: 0,
+      label: '',
+    }));
 
     chartInst = new Chart(ctx, {
       type: 'scatter',
       data: {
         datasets: [
-          { label: '취침', data: sleepPts, backgroundColor: '#4e6880', pointRadius: 7 },
-          { label: '기상', data: wakePts, backgroundColor: '#7898ae', pointRadius: 7 }
+          ...lineDatasets,
+          { label: '취침 🌙', data: sleepPts, pointStyle: moonImg, pointRadius: 11, backgroundColor: 'transparent' },
+          { label: '기상 ☀️', data: wakePts,  pointStyle: sunImg,  pointRadius: 11, backgroundColor: 'transparent' },
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { filter: item => item.text !== '' } }
+        },
         scales: {
-          x: { type: 'linear', min: -0.5, max: 13.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          x: { type: 'linear', min: -0.5, max: days.length - 0.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
           y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
         }
       }
@@ -935,7 +1114,7 @@ function renderChart(data) {
           label: cat,
           data: days.map(day => {
             const total = acts
-              .filter(l => l.category === cat && fmtDate(l.ts) === day)
+              .filter(l => l.category === cat && keyFn(l.ts) === day)
               .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
             return total > 0 ? +total.toFixed(2) : null;
           }),
@@ -954,27 +1133,28 @@ function renderChart(data) {
     });
 
   } else {
-    const COLORS = ['#7898ae','#a0b8c8','#5e8fa8','#6ba0b8','#8ab0c4','#90abc0'];
+    // med timing
     const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
     const allNames = [...new Set(data.logs.filter(l => l.type === 'med').map(l => l.name))];
-
-    const datasets = allNames.map((name, ci) => ({
-      label: name,
-      data: data.logs
-        .filter(l => l.type === 'med' && l.name === name)
-        .map(l => { const xi = dayIdx[fmtDate(l.ts)]; return xi != null ? { x: xi, y: toHour(l.ts) } : null; })
-        .filter(Boolean),
-      backgroundColor: COLORS[ci % COLORS.length],
-      pointRadius: 8,
-    }));
-
+    const datasets = allNames.map((name, ci) => {
+      const color = data.medColors[name] || MED_DEFAULT_COLORS[ci % MED_DEFAULT_COLORS.length];
+      return {
+        label: name,
+        data: data.logs
+          .filter(l => l.type === 'med' && l.name === name)
+          .map(l => { const xi = dayIdx[keyFn(l.ts)]; return xi != null ? { x: xi, y: toHour(l.ts) } : null; })
+          .filter(Boolean),
+        backgroundColor: color,
+        pointRadius: 8,
+      };
+    });
     chartInst = new Chart(ctx, {
       type: 'scatter',
       data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { type: 'linear', min: -0.5, max: 13.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          x: { type: 'linear', min: -0.5, max: days.length - 0.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
           y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
         }
       }
@@ -988,14 +1168,12 @@ function renderReport(data) {
   const sessions = getSessions(data.logs);
   const acts = data.logs.filter(l => l.type === 'activity');
 
-  // 평균 수면 시간
   const sleepHours = days.map(day => {
     const s = sessions.find(s => s.end && fmtDate(s.end) === day);
     return s ? (new Date(s.end) - new Date(s.start)) / 3600000 : 0;
   }).filter(h => h > 0);
   const avgSleep = sleepHours.length ? (sleepHours.reduce((a,b)=>a+b,0)/sleepHours.length).toFixed(1) : '—';
 
-  // 카테고리별 14일 합계
   const catTotals = ACT_CATEGORIES.map(cat => {
     const total = acts.filter(l => l.category === cat)
       .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
@@ -1003,7 +1181,6 @@ function renderReport(data) {
   });
   const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
 
-  // 최근 7일 활동 비중
   const last7 = days.slice(-7);
   const cat7Totals = ACT_CATEGORIES.map((cat, ci) => {
     const total = acts
@@ -1074,9 +1251,10 @@ function importData(e) {
       const current = load();
       const existingIds = new Set(current.logs.map(l => l.id));
       const merged = {
-        medNames: [...new Set([...current.medNames, ...imported.medNames])],
-        logs: [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))]
-          .sort((a, b) => new Date(a.ts) - new Date(b.ts))
+        medNames:  [...new Set([...current.medNames,  ...(imported.medNames  || [])])],
+        medColors: { ...current.medColors, ...(imported.medColors || {}) },
+        todos:     [...(current.todos || []), ...(imported.todos || []).filter(t => !(current.todos||[]).find(x => x.id === t.id))],
+        logs:      [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))].sort((a,b) => new Date(a.ts)-new Date(b.ts))
       };
       save(merged);
       render();
@@ -1089,10 +1267,21 @@ function importData(e) {
   e.target.value = '';
 }
 
-document.getElementById('edit-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('edit-overlay')) closeEditModal();
+// ── Modal backdrop close ──────────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) {
+      overlay.classList.remove('open');
+      if (overlay.id === 'edit-overlay') { editingId = null; editingId2 = null; }
+      if (overlay.id === 'manage-overlay') { manageType = null; render(); }
+      if (overlay.id === 'todo-time-overlay') pendingTodoId = null;
+    }
+  });
 });
 
+// ── Init ──────────────────────────────────────────────────────────
+updateClock();
+setInterval(updateClock, 30000);
 setNow();
 setActNow();
 render();
