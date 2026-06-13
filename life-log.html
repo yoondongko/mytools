@@ -43,20 +43,6 @@
     .status-cell .lbl { font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
     .status-cell .val { font-size: 15px; font-weight: 600; }
 
-    /* Sleep button */
-    #sleep-btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.1s;
-    }
-    #sleep-btn:active { opacity: 0.75; }
-    .sleep-hint { font-size: 12px; color: #8e8e93; text-align: center; margin-top: 8px; min-height: 16px; }
-
     /* Medication */
     .med-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .med-chip { position: relative; display: inline-flex; }
@@ -224,23 +210,13 @@
 
   <div class="card">
     <div class="card-header">
-      <div class="card-title">기록 시각</div>
+      <div class="card-title">약</div>
       <button class="now-btn" onclick="setNow()">지금으로</button>
     </div>
-    <div class="dt-row">
+    <div class="dt-row" style="margin-bottom:12px;">
       <input type="date" id="log-date">
       <input type="time" id="log-time">
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">수면</div>
-    <button id="sleep-btn" onclick="toggleSleep()">😴 잠든다</button>
-    <div class="sleep-hint" id="sleep-hint"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">약</div>
     <div class="med-row" id="med-row"></div>
   </div>
 
@@ -410,17 +386,6 @@ function getLogTs() {
   return new Date(`${date}T${time}`).toISOString();
 }
 
-function toggleSleep() {
-  const data = load();
-  const sleepLogs = data.logs.filter(l => l.type === 'sleep_start' || l.type === 'sleep_end');
-  const last = sleepLogs[sleepLogs.length - 1];
-  const isSleeping = last && last.type === 'sleep_start';
-  data.logs.push({ id: String(Date.now()), type: isSleeping ? 'sleep_end' : 'sleep_start', ts: getLogTs() });
-  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-  save(data);
-  render();
-}
-
 function logMed(name) {
   const data = load();
   data.logs.push({ id: String(Date.now()), type: 'med', name, ts: getLogTs() });
@@ -518,7 +483,6 @@ function switchChart(type) {
 function render() {
   const data = load();
   renderSummary(data);
-  renderSleepBtn(data);
   renderMedRow(data);
   renderChart(data);
   renderLogs(data);
@@ -553,24 +517,6 @@ function renderSummary(data) {
 
   const cnt = data.logs.filter(l => l.type === 'med' && isToday(l.ts)).length;
   document.getElementById('s-med').textContent = String(cnt);
-}
-
-function renderSleepBtn(data) {
-  const sleepLogs = data.logs.filter(l => l.type === 'sleep_start' || l.type === 'sleep_end');
-  const last = sleepLogs[sleepLogs.length - 1];
-  const isSleeping = last && last.type === 'sleep_start';
-  const btn = document.getElementById('sleep-btn');
-  const hint = document.getElementById('sleep-hint');
-
-  if (isSleeping) {
-    btn.textContent = '☀️ 일어났다';
-    btn.style.cssText = 'background:#ffd60a; color:#1c1c1e;';
-    hint.textContent = `취침: ${fmtTime(last.ts)}`;
-  } else {
-    btn.textContent = '😴 잠든다';
-    btn.style.cssText = 'background:#1c1c1e; color:white;';
-    hint.textContent = last ? `마지막 기상: ${fmtTime(last.ts)}` : '';
-  }
 }
 
 function renderMedRow(data) {
