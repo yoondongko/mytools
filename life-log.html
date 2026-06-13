@@ -122,6 +122,18 @@
     .manage-add-row input:focus { border-color: #007aff; }
     .manage-add-submit { background: #007aff; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
 
+    /* Mood card */
+    .mood-emoji-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .mood-emoji-btn { background: none; border: 2px solid #e5e5ea; border-radius: 50%; width: 44px; height: 44px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .mood-emoji-btn.selected { border-color: #007aff; background: #e8f3ff; }
+    .mood-memo { width: 100%; border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 9px 10px; font-size: 14px; outline: none; font-family: inherit; resize: none; }
+    .mood-memo:focus { border-color: #007aff; }
+    .mood-save-btn { background: #007aff; color: white; border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    /* Year nav */
+    .year-nav { display: none; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; font-weight: 600; color: #1d1d1f; }
+    .year-nav.show { display: flex; }
+    .year-nav button { background: #f2f2f7; border: none; border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer; color: #4e6880; }
+
     /* Auth */
     #auth-overlay { position: fixed; inset: 0; background: #f2f2f7; display: flex; align-items: center; justify-content: center; z-index: 9999; }
     #auth-box { background: white; border-radius: 16px; padding: 32px 28px; width: 280px; text-align: center; }
@@ -212,6 +224,24 @@
 
   <div class="card">
     <div class="card-header">
+      <div class="card-title">기분</div>
+    </div>
+    <div class="mood-emoji-row">
+      <button class="mood-emoji-btn" data-score="1" onclick="selectMoodScore(1)">😢</button>
+      <button class="mood-emoji-btn" data-score="2" onclick="selectMoodScore(2)">😔</button>
+      <button class="mood-emoji-btn" data-score="3" onclick="selectMoodScore(3)">😐</button>
+      <button class="mood-emoji-btn" data-score="4" onclick="selectMoodScore(4)">🙂</button>
+      <button class="mood-emoji-btn" data-score="5" onclick="selectMoodScore(5)">😊</button>
+    </div>
+    <textarea class="mood-memo" id="mood-memo" placeholder="오늘 한마디 (선택)" rows="2"></textarea>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+      <div style="font-size:13px; color:#8e8e93;" id="mood-today"></div>
+      <button class="mood-save-btn" onclick="saveMood()">저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
       <div class="card-title">약</div>
       <div style="display:flex; gap:8px; align-items:center;">
         <button class="now-btn" onclick="openManageModal('med')">항목 수정</button>
@@ -273,10 +303,15 @@
       <button class="tab" data-chart="activity" onclick="switchChart('activity')">시간 분석</button>
       <button class="tab" data-chart="report" onclick="switchChart('report')">종합 리포트</button>
     </div>
-    <div class="period-row">
+    <div class="period-row" style="align-items:center;">
       <button class="period-btn active" data-period="week" onclick="switchPeriod('week')">주간</button>
       <button class="period-btn" data-period="month" onclick="switchPeriod('month')">월간</button>
       <button class="period-btn" data-period="year" onclick="switchPeriod('year')">년간</button>
+      <div class="year-nav" id="year-nav">
+        <button onclick="changeYear(-1)">◀</button>
+        <span id="year-label">2026년</span>
+        <button onclick="changeYear(1)">▶</button>
+      </div>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
     <div id="report-wrap" style="display:none;"></div>
@@ -330,8 +365,11 @@ const KEY = 'lifeLog_v1';
 let chartInst = null;
 let activeChart = 'duration';
 let chartPeriod = 'week';
+let chartYear = new Date().getFullYear();
 let logCollapsed = false;
 let activeLogFilter = 'all';
+let selectedMoodScore = 0;
+const MOOD_EMOJIS = ['', '😢', '😔', '😐', '🙂', '😊'];
 
 // ── Data ──────────────────────────────────────────────────────────
 
@@ -343,10 +381,11 @@ function load() {
     if (!d.medColors)      d.medColors      = {};
     if (!d.logs)           d.logs           = [];
     if (!d.todos)          d.todos          = [];
+    if (!d.moodLogs)       d.moodLogs       = [];
     if (!d.actCategories || !d.actCategories.length)
       d.actCategories = DEFAULT_ACT_CATEGORIES.map(c => ({...c}));
     return d;
-  } catch { return { medNames: [], medColors: {}, logs: [], todos: [] }; }
+  } catch { return { medNames: [], medColors: {}, logs: [], todos: [], moodLogs: [] }; }
 }
 
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
@@ -374,27 +413,86 @@ function isToday(iso) {
   return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
 }
 
-function getChartDays() {
-  const today = new Date();
-  if (chartPeriod === 'week') {
-    return Array.from({length: 7}, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i));
-      return `${d.getMonth()+1}/${d.getDate()}`;
-    });
-  } else if (chartPeriod === 'month') {
-    const y = today.getFullYear(), m = today.getMonth();
-    const cnt = new Date(y, m + 1, 0).getDate();
-    return Array.from({length: cnt}, (_, i) => `${m+1}/${i+1}`);
-  } else {
-    return Array.from({length: 12}, (_, i) => `${i+1}월`);
-  }
+
+function getWeekMonday(date) {
+  const d = new Date(date || new Date());
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d;
 }
 
-function last14Days() {
-  return Array.from({length: 14}, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (13 - i));
-    return `${d.getMonth()+1}/${d.getDate()}`;
-  });
+function getMonthWeeks(y, m) {
+  const weeks = [];
+  const first = new Date(y, m, 1);
+  const last  = new Date(y, m + 1, 0);
+  let cur = new Date(first);
+  let num = 1;
+  while (cur <= last) {
+    const end = new Date(cur);
+    end.setDate(cur.getDate() + 6);
+    if (end > last) end.setTime(last.getTime());
+    end.setHours(23, 59, 59, 999);
+    weeks.push({ label: `${num}주`, start: new Date(cur), end: new Date(end) });
+    cur.setDate(cur.getDate() + 7);
+    num++;
+  }
+  return weeks;
+}
+
+function avgTimeOfDay(isoArr) {
+  if (!isoArr || !isoArr.length) return '—';
+  let total = 0;
+  isoArr.forEach(iso => { const d = new Date(iso); total += d.getHours() + d.getMinutes() / 60; });
+  const avg = total / isoArr.length;
+  const h = Math.floor(avg) % 24;
+  const min = Math.round((avg % 1) * 60) % 60;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+
+function getChartSetup() {
+  const now = new Date();
+  if (chartPeriod === 'week') {
+    const mon = getWeekMonday();
+    const dates = Array.from({length: 7}, (_, i) => {
+      const d = new Date(mon);
+      d.setDate(mon.getDate() + i);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    });
+    const labels = dates.map(d => `${d.getMonth()+1}/${d.getDate()}`);
+    const strs   = dates.map(d => d.toDateString());
+    return {
+      labels, dates, isWeek: true,
+      getBucket: (iso) => {
+        const d = new Date(iso); d.setHours(0, 0, 0, 0);
+        const i = strs.indexOf(d.toDateString());
+        return i >= 0 ? labels[i] : null;
+      },
+    };
+  } else if (chartPeriod === 'month') {
+    const weeks = getMonthWeeks(now.getFullYear(), now.getMonth());
+    const labels = weeks.map(w => w.label);
+    return {
+      labels, weeks, isMonth: true,
+      getBucket: (iso) => {
+        const d = new Date(iso);
+        const w = weeks.find(w => d >= w.start && d <= w.end);
+        return w ? w.label : null;
+      },
+    };
+  } else {
+    const y = chartYear;
+    const labels = Array.from({length: 12}, (_, i) => `${i+1}월`);
+    return {
+      labels, isYear: true, year: y,
+      getBucket: (iso) => {
+        const d = new Date(iso);
+        if (d.getFullYear() !== y) return null;
+        return `${d.getMonth()+1}월`;
+      },
+    };
+  }
 }
 
 function getSessions(logs) {
@@ -721,6 +819,43 @@ function deleteTodoFromManage(id) {
   renderManageList();
 }
 
+// ── Mood ──────────────────────────────────────────────────────────
+
+function selectMoodScore(score) {
+  selectedMoodScore = score;
+  document.querySelectorAll('.mood-emoji-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.score) === score);
+  });
+}
+
+function saveMood() {
+  if (!selectedMoodScore) { alert('기분을 선택해주세요'); return; }
+  const memo = document.getElementById('mood-memo').value.trim();
+  const today = new Date().toISOString().slice(0, 10);
+  const data = load();
+  data.moodLogs = (data.moodLogs || []).filter(m => m.date !== today);
+  data.moodLogs.push({ date: today, score: selectedMoodScore, memo, ts: new Date().toISOString() });
+  save(data);
+  renderMoodCard(data);
+}
+
+function renderMoodCard(data) {
+  const today = new Date().toISOString().slice(0, 10);
+  const m = (data.moodLogs || []).find(m => m.date === today);
+  const el = document.getElementById('mood-today');
+  if (!el) return;
+  if (m) {
+    el.textContent = `오늘: ${MOOD_EMOJIS[m.score]}${m.memo ? ' · ' + m.memo : ''}`;
+    document.querySelectorAll('.mood-emoji-btn').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.score) === m.score);
+    });
+    selectedMoodScore = m.score;
+    document.getElementById('mood-memo').value = m.memo || '';
+  } else {
+    el.textContent = '오늘 기분을 기록해주세요';
+  }
+}
+
 // ── Edit modal ────────────────────────────────────────────────────
 
 let editingId  = null;
@@ -870,6 +1005,15 @@ function switchChart(type) {
 function switchPeriod(p) {
   chartPeriod = p;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+  const yn = document.getElementById('year-nav');
+  if (yn) yn.classList.toggle('show', p === 'year');
+  renderChart(load());
+}
+
+function changeYear(delta) {
+  chartYear += delta;
+  const el = document.getElementById('year-label');
+  if (el) el.textContent = `${chartYear}년`;
   renderChart(load());
 }
 
@@ -902,6 +1046,7 @@ function render() {
   const data = load();
   syncActCategories(data);
   renderSummary(data);
+  renderMoodCard(data);
   renderMedRow(data);
   renderTodos(data);
   renderActButtons(data);
@@ -1018,7 +1163,7 @@ function renderLogs(data) {
     if (l.type === 'sleep_end') continue; // handled via sleep_start pairing
     if (l.type === 'sleep_start') {
       const sess = sessionByStartId[l.id];
-      displayItems.push({ kind: 'sleep', sess, l });
+      if (sess) displayItems.push({ kind: 'sleep', sess, l });
     } else {
       displayItems.push({ kind: 'log', l });
     }
@@ -1091,32 +1236,26 @@ function renderChart(data) {
   if (isReport) { renderReport(data); return; }
 
   const ctx = document.getElementById('chart').getContext('2d');
-  const days = getChartDays();
-  const isYear = chartPeriod === 'year';
-
-  const keyFn = isYear ? fmtMonth : fmtDate;
+  const setup = getChartSetup();
+  const {labels, getBucket} = setup;
 
   if (activeChart === 'duration') {
     const sessions = getSessions(data.logs);
-    const durByKey = {};
-    const cntByKey = {};
+    const durByLabel = {}, cntByLabel = {};
     sessions.forEach(s => {
       if (!s.end) return;
-      const key = keyFn(s.end);
-      if (!days.includes(key)) return;
-      durByKey[key] = (durByKey[key] || 0) + (new Date(s.end) - new Date(s.start)) / 3600000;
-      cntByKey[key] = (cntByKey[key] || 0) + 1;
+      const b = getBucket(s.end);
+      if (!b) return;
+      durByLabel[b] = (durByLabel[b] || 0) + (new Date(s.end) - new Date(s.start)) / 3600000;
+      cntByLabel[b] = (cntByLabel[b] || 0) + 1;
     });
-    const vals = days.map(d => {
-      if (durByKey[d] == null) return null;
-      return isYear ? +(durByKey[d] / cntByKey[d]).toFixed(2) : +durByKey[d].toFixed(2);
+    const vals = labels.map(l => {
+      if (durByLabel[l] == null) return null;
+      return setup.isWeek ? +durByLabel[l].toFixed(2) : +(durByLabel[l] / cntByLabel[l]).toFixed(2);
     });
     chartInst = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels: days,
-        datasets: [{ label: isYear ? '평균 수면 (h)' : '수면 시간 (h)', data: vals, backgroundColor: '#4e6880', borderRadius: 5 }]
-      },
+      data: { labels, datasets: [{ label: setup.isWeek ? '수면 시간 (h)' : '평균 수면 (h)', data: vals, backgroundColor: '#4e6880', borderRadius: 5 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
@@ -1126,17 +1265,16 @@ function renderChart(data) {
 
   } else if (activeChart === 'timing') {
     const sessions = getSessions(data.logs);
-    const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
+    const labelIdx = Object.fromEntries(labels.map((l, i) => [l, i]));
     const sleepPts = [], wakePts = [], linePairs = [];
-
     sessions.forEach(s => {
-      const sk = keyFn(s.start);
-      const si = dayIdx[sk];
+      const sb = getBucket(s.start);
+      const si = sb != null ? labelIdx[sb] : null;
       if (si != null) {
         sleepPts.push({ x: si, y: toHour(s.start) });
         if (s.end) {
-          const ek = keyFn(s.end);
-          const ei = dayIdx[ek];
+          const eb = getBucket(s.end);
+          const ei = eb != null ? labelIdx[eb] : null;
           if (ei != null) {
             wakePts.push({ x: ei, y: toHour(s.end) });
             linePairs.push([{ x: si, y: toHour(s.start) }, { x: ei, y: toHour(s.end) }]);
@@ -1144,38 +1282,23 @@ function renderChart(data) {
         }
       }
     });
-
     const moonImg = makeEmojiImg('🌙', 22);
     const sunImg  = makeEmojiImg('☀️', 22);
-
     const lineDatasets = linePairs.map(pair => ({
-      type: 'line',
-      data: pair,
-      borderColor: 'rgba(78,104,128,0.35)',
-      borderWidth: 1.5,
-      borderDash: [4, 3],
-      pointRadius: 0,
-      showLine: true,
-      tension: 0,
-      label: '',
+      type: 'line', data: pair, borderColor: 'rgba(78,104,128,0.35)', borderWidth: 1.5,
+      borderDash: [4, 3], pointRadius: 0, showLine: true, tension: 0, label: '',
     }));
-
     chartInst = new Chart(ctx, {
       type: 'scatter',
-      data: {
-        datasets: [
-          ...lineDatasets,
-          { label: '취침 🌙', data: sleepPts, pointStyle: moonImg, pointRadius: 11, backgroundColor: 'transparent' },
-          { label: '기상 ☀️', data: wakePts,  pointStyle: sunImg,  pointRadius: 11, backgroundColor: 'transparent' },
-        ]
-      },
+      data: { datasets: [...lineDatasets,
+        { label: '취침 🌙', data: sleepPts, pointStyle: moonImg, pointRadius: 11, backgroundColor: 'transparent' },
+        { label: '기상 ☀️', data: wakePts,  pointStyle: sunImg,  pointRadius: 11, backgroundColor: 'transparent' },
+      ]},
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { filter: item => item.text !== '' } }
-        },
+        plugins: { legend: { labels: { filter: item => item.text !== '' } } },
         scales: {
-          x: { type: 'linear', min: -0.5, max: days.length - 0.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          x: { type: 'linear', min: -0.5, max: labels.length - 0.5, ticks: { stepSize: 1, callback: v => labels[Math.round(v)] || '' } },
           y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
         }
       }
@@ -1186,52 +1309,43 @@ function renderChart(data) {
     chartInst = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: days,
+        labels,
         datasets: ACT_CATEGORIES.map((cat, ci) => ({
           label: cat,
-          data: days.map(day => {
-            const total = acts
-              .filter(l => l.category === cat && keyFn(l.ts) === day)
+          data: labels.map(lb => {
+            const total = acts.filter(l => l.category === cat && getBucket(l.ts) === lb)
               .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
             return total > 0 ? +total.toFixed(2) : null;
           }),
-          backgroundColor: ACT_COLORS[ci],
-          borderRadius: 3,
-          stack: 'act',
+          backgroundColor: ACT_COLORS[ci], borderRadius: 3, stack: 'act',
         }))
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        scales: {
-          x: { stacked: true },
-          y: { stacked: true, beginAtZero: true, ticks: { callback: v => v + 'h' } }
-        }
+        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: v => v + 'h' } } }
       }
     });
 
   } else {
     // med timing
-    const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
+    const labelIdx = Object.fromEntries(labels.map((l, i) => [l, i]));
     const allNames = [...new Set(data.logs.filter(l => l.type === 'med').map(l => l.name))];
     const datasets = allNames.map((name, ci) => {
       const color = data.medColors[name] || MED_DEFAULT_COLORS[ci % MED_DEFAULT_COLORS.length];
       return {
         label: name,
-        data: data.logs
-          .filter(l => l.type === 'med' && l.name === name)
-          .map(l => { const xi = dayIdx[keyFn(l.ts)]; return xi != null ? { x: xi, y: toHour(l.ts) } : null; })
+        data: data.logs.filter(l => l.type === 'med' && l.name === name)
+          .map(l => { const b = getBucket(l.ts); const xi = b != null ? labelIdx[b] : null; return xi != null ? { x: xi, y: toHour(l.ts) } : null; })
           .filter(Boolean),
-        backgroundColor: color,
-        pointRadius: 8,
+        backgroundColor: color, pointRadius: 8,
       };
     });
     chartInst = new Chart(ctx, {
-      type: 'scatter',
-      data: { datasets },
+      type: 'scatter', data: { datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { type: 'linear', min: -0.5, max: days.length - 0.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
+          x: { type: 'linear', min: -0.5, max: labels.length - 0.5, ticks: { stepSize: 1, callback: v => labels[Math.round(v)] || '' } },
           y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
         }
       }
@@ -1239,71 +1353,244 @@ function renderChart(data) {
   }
 }
 
+function reportSleepStats(sessions, start, end) {
+  const inRange = sessions.filter(s => s.end && new Date(s.end) >= start && new Date(s.end) <= end);
+  const durs = inRange.map(s => (new Date(s.end) - new Date(s.start)) / 3600000);
+  return {
+    count: durs.length,
+    avgDur: durs.length ? (durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1) : '—',
+    avgBed: avgTimeOfDay(inRange.map(s => s.start)),
+    avgWake: avgTimeOfDay(inRange.map(s => s.end)),
+  };
+}
+
+function reportActStats(acts, start, end, catList, colList) {
+  const inRange = acts.filter(l => new Date(l.ts) >= start && new Date(l.ts) <= end);
+  return catList.map((cat, i) => {
+    const total = inRange.filter(l => l.category === cat)
+      .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
+    return { cat, total: +total.toFixed(2), color: colList[i] };
+  });
+}
+
+function reportMoodStats(moodLogs, start, end) {
+  const inRange = (moodLogs || []).filter(m => { const d = new Date(m.date); return d >= start && d <= end; });
+  const avg = inRange.length ? (inRange.reduce((s,m)=>s+m.score,0)/inRange.length).toFixed(1) : '—';
+  return { entries: inRange, avg };
+}
+
+function reportTodosInRange(todoLogs, start, end) {
+  return todoLogs.filter(l => new Date(l.ts) >= start && new Date(l.ts) <= end);
+}
+
+function reportMedStats(medLogs, start, end, allNames) {
+  const inRange = medLogs.filter(l => new Date(l.ts) >= start && new Date(l.ts) <= end);
+  return allNames.map(name => ({
+    name, avgTime: avgTimeOfDay(inRange.filter(l => l.name === name).map(l => l.ts))
+  }));
+}
+
+function rSec(title) {
+  return `<div style="font-size:12px; color:#8e8e93; font-weight:600; letter-spacing:0.5px; margin:14px 0 6px;">${title}</div>`;
+}
+function rStatGrid(items) {
+  return `<div style="display:grid; grid-template-columns:repeat(${Math.min(items.length,3)}, 1fr); gap:6px; margin-bottom:8px;">
+    ${items.map(it => `<div style="background:#f2f2f7; border-radius:8px; padding:10px 8px; text-align:center;">
+      <div style="font-size:11px; color:#8e8e93; margin-bottom:3px;">${it.lbl}</div>
+      <div style="font-size:16px; font-weight:700;">${it.val}</div>
+    </div>`).join('')}
+  </div>`;
+}
+function rActBars(catStats) {
+  const grand = catStats.reduce((s,c)=>s+c.total,0);
+  if (!grand) return '<div style="font-size:13px; color:#8e8e93;">기록 없음</div>';
+  return catStats.map(c => `
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span style="width:68px; font-size:12px;">${ACT_EMOJI[c.cat]||''} ${c.cat}</span>
+      <div style="flex:1; background:#f2f2f7; border-radius:4px; height:8px; overflow:hidden;">
+        <div style="height:100%; width:${grand>0?(c.total/grand*100).toFixed(1):0}%; background:${c.color}; border-radius:4px;"></div>
+      </div>
+      <span style="font-size:12px; font-weight:600; width:34px; text-align:right;">${c.total.toFixed(1)}h</span>
+    </div>`).join('');
+}
+
 function renderReport(data) {
   const wrap = document.getElementById('report-wrap');
-  const days = last14Days();
+  const setup = getChartSetup();
   const sessions = getSessions(data.logs);
   const acts = data.logs.filter(l => l.type === 'activity');
+  const meds = data.logs.filter(l => l.type === 'med');
+  const todoLogs = data.logs.filter(l => l.type === 'todo');
+  const allMedNames = [...new Set(meds.map(l => l.name))];
 
-  const sleepHours = days.map(day => {
-    const s = sessions.find(s => s.end && fmtDate(s.end) === day);
-    return s ? (new Date(s.end) - new Date(s.start)) / 3600000 : 0;
-  }).filter(h => h > 0);
-  const avgSleep = sleepHours.length ? (sleepHours.reduce((a,b)=>a+b,0)/sleepHours.length).toFixed(1) : '—';
+  let html = '';
 
-  const catTotals = ACT_CATEGORIES.map(cat => {
-    const total = acts.filter(l => l.category === cat)
-      .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
-    return { cat, total };
-  });
-  const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
+  if (setup.isWeek) {
+    const {dates, labels} = setup;
+    const mon = dates[0], sun = new Date(dates[6]); sun.setHours(23,59,59,999);
+    const monStr = `${mon.getMonth()+1}/${mon.getDate()}`;
+    const sunStr = `${sun.getMonth()+1}/${sun.getDate()}`;
+    const DAY_KO = ['월','화','수','목','금','토','일'];
 
-  const last7 = days.slice(-7);
-  const cat7Totals = ACT_CATEGORIES.map((cat, ci) => {
-    const total = acts
-      .filter(l => l.category === cat && last7.includes(fmtDate(l.ts)))
-      .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
-    return { cat, total, color: ACT_COLORS[ci] };
-  }).filter(c => c.total > 0);
+    const sleep = reportSleepStats(sessions, mon, sun);
+    const catStats = reportActStats(acts, mon, sun, ACT_CATEGORIES, ACT_COLORS);
+    const mood = reportMoodStats(data.moodLogs, mon, sun);
+    const medStats = reportMedStats(meds, mon, sun, allMedNames);
+    const weekTodos = reportTodosInRange(todoLogs, mon, sun);
 
-  wrap.innerHTML = `
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
-      <div style="background:#eef1f5; border-radius:8px; padding:12px; text-align:center; border-left:4px solid #4e6880;">
-        <div style="font-size:11px; color:#8e8e93; margin-bottom:4px;">평균 수면</div>
-        <div style="font-size:22px; font-weight:700; color:#4e6880;">${avgSleep}<span style="font-size:13px; color:#8e8e93;">h</span></div>
-      </div>
-      <div style="background:#f2f2f7; border-radius:8px; padding:12px; text-align:center;">
-        <div style="font-size:11px; color:#8e8e93; margin-bottom:4px;">14일 활동 합계</div>
-        <div style="font-size:22px; font-weight:700;">${grandTotal.toFixed(1)}<span style="font-size:13px; color:#8e8e93;">h</span></div>
-      </div>
-    </div>
-    <div style="font-size:12px; color:#8e8e93; margin-bottom:8px; font-weight:600; letter-spacing:0.5px;">카테고리별 합계 (14일)</div>
-    ${catTotals.map((c, i) => `
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-        <span style="width:70px; font-size:13px;">${ACT_EMOJI[c.cat]} ${c.cat}</span>
-        <div style="flex:1; background:#f2f2f7; border-radius:4px; height:10px; overflow:hidden;">
-          <div style="height:100%; width:${grandTotal>0?(c.total/grandTotal*100).toFixed(1):0}%; background:${ACT_COLORS[i]}; border-radius:4px;"></div>
-        </div>
-        <span style="font-size:13px; font-weight:600; width:36px; text-align:right;">${c.total.toFixed(1)}h</span>
-      </div>`).join('')}
-    ${cat7Totals.length ? `
-      <div style="font-size:12px; color:#8e8e93; margin-top:12px; margin-bottom:8px; font-weight:600; letter-spacing:0.5px;">최근 7일 비중</div>
-      <div style="position:relative; height:130px;"><canvas id="pie-chart"></canvas></div>` : ''}
-  `;
+    html += `<div style="font-size:13px; font-weight:600; margin-bottom:12px; color:#4e6880;">📅 ${monStr} (월) ~ ${sunStr} (일)</div>`;
 
-  if (cat7Totals.length) {
-    new Chart(document.getElementById('pie-chart').getContext('2d'), {
-      type: 'doughnut',
-      data: {
-        labels: cat7Totals.map(c => c.cat),
-        datasets: [{ data: cat7Totals.map(c => +c.total.toFixed(2)), backgroundColor: cat7Totals.map(c => c.color), borderWidth: 0 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 8, boxWidth: 12 } } }
-      }
+    html += rSec('💤 수면');
+    html += rStatGrid([
+      {lbl:'평균 수면', val: sleep.avgDur + (sleep.avgDur!=='—'?'h':'')},
+      {lbl:'평균 취침', val: sleep.avgBed},
+      {lbl:'평균 기상', val: sleep.avgWake},
+    ]);
+
+    if (allMedNames.length) {
+      html += rSec('💊 복약 (평균 시각)');
+      html += rStatGrid(medStats.map(m => ({lbl: m.name, val: m.avgTime})));
+    }
+
+    html += rSec('⏱ 활동');
+    html += rActBars(catStats);
+
+    html += rSec('✅ 할일 (일별)');
+    const dayNames = ['월','화','수','목','금','토','일'];
+    const todoByDay = dates.map(d => {
+      const ds = d.toISOString().slice(0,10);
+      return todoLogs.filter(l => l.ts.slice(0,10) === ds);
     });
+    const hasTodo = todoByDay.some(arr => arr.length > 0);
+    if (!hasTodo) {
+      html += '<div style="font-size:13px; color:#8e8e93; margin-bottom:6px;">완료 기록 없음</div>';
+    } else {
+      html += '<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:8px;">';
+      dayNames.forEach((dn, i) => {
+        html += `<div style="text-align:center; font-size:11px; color:#8e8e93; padding:4px 0;">${dn}</div>`;
+      });
+      todoByDay.forEach(arr => {
+        html += `<div style="text-align:center; font-size:13px; font-weight:600; padding:4px 0;">${arr.length > 0 ? arr.length + '건' : '—'}</div>`;
+      });
+      html += '</div>';
+      weekTodos.forEach(l => {
+        const d = new Date(l.ts);
+        html += `<div style="font-size:12px; color:#3a3a3c; margin-bottom:3px;">✅ ${l.text} <span style="color:#8e8e93;">(${DAY_KO[(d.getDay()+6)%7]} ${fmtTime(l.ts)})</span></div>`;
+      });
+    }
+
+    html += rSec('😊 기분');
+    html += `<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px;">`;
+    dayNames.forEach(dn => { html += `<div style="text-align:center; font-size:11px; color:#8e8e93;">${dn}</div>`; });
+    dates.forEach(d => {
+      const ds = d.toISOString().slice(0,10);
+      const m = (data.moodLogs||[]).find(m => m.date === ds);
+      html += `<div style="text-align:center; font-size:18px;">${m ? MOOD_EMOJIS[m.score] : '—'}</div>`;
+    });
+    html += `</div><div style="font-size:13px; color:#8e8e93;">평균: ${mood.avg}${mood.avg!=='—'?'/5':''}</div>`;
+
+  } else if (setup.isMonth) {
+    const {weeks} = setup;
+    const now = new Date();
+    html += `<div style="font-size:13px; font-weight:600; margin-bottom:12px; color:#4e6880;">📅 ${now.getFullYear()}년 ${now.getMonth()+1}월</div>`;
+
+    // Per-week breakdown
+    weeks.forEach(w => {
+      const sleep = reportSleepStats(sessions, w.start, w.end);
+      const catStats = reportActStats(acts, w.start, w.end, ACT_CATEGORIES, ACT_COLORS);
+      const mood = reportMoodStats(data.moodLogs, w.start, w.end);
+      const medStats = reportMedStats(meds, w.start, w.end, allMedNames);
+      const weekTodos = reportTodosInRange(todoLogs, w.start, w.end);
+      const ws = `${w.start.getMonth()+1}/${w.start.getDate()}`;
+      const we = `${w.end.getMonth()+1}/${w.end.getDate() > new Date(now.getFullYear(), now.getMonth()+1,0).getDate() ? new Date(now.getFullYear(), now.getMonth()+1,0).getDate() : w.end.getDate()}`;
+
+      html += `<div style="background:#f8f8fa; border-radius:8px; padding:12px; margin-bottom:10px;">`;
+      html += `<div style="font-size:12px; font-weight:700; color:#4e6880; margin-bottom:8px;">${w.label} (${ws}~${w.end.getMonth()+1}/${w.end.getDate()})</div>`;
+      html += rStatGrid([
+        {lbl:'평균 수면', val: sleep.avgDur+(sleep.avgDur!=='—'?'h':'')},
+        {lbl:'취침', val: sleep.avgBed},
+        {lbl:'기상', val: sleep.avgWake},
+      ]);
+      const actGrand = catStats.reduce((s,c)=>s+c.total,0);
+      if (actGrand > 0) {
+        html += `<div style="font-size:11px; color:#8e8e93; margin-bottom:4px;">활동</div>`;
+        html += rActBars(catStats);
+      }
+      if (weekTodos.length) {
+        html += `<div style="font-size:11px; color:#8e8e93; margin-top:4px; margin-bottom:3px;">할일 ${weekTodos.length}건</div>`;
+        weekTodos.slice(0,5).forEach(l => { html += `<div style="font-size:12px; color:#3a3a3c;">✅ ${l.text}</div>`; });
+        if (weekTodos.length > 5) html += `<div style="font-size:12px; color:#8e8e93;">외 ${weekTodos.length-5}건</div>`;
+      }
+      if (mood.entries.length) {
+        html += `<div style="font-size:11px; color:#8e8e93; margin-top:4px;">기분 평균 ${mood.avg}/5 · `;
+        html += mood.entries.map(m => MOOD_EMOJIS[m.score]).join('') + '</div>';
+      }
+      html += '</div>';
+    });
+
+    // Monthly totals
+    const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const mEnd   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+    const mSleep = reportSleepStats(sessions, mStart, mEnd);
+    const mCat   = reportActStats(acts, mStart, mEnd, ACT_CATEGORIES, ACT_COLORS);
+    const mMood  = reportMoodStats(data.moodLogs, mStart, mEnd);
+    const mTodos = reportTodosInRange(todoLogs, mStart, mEnd);
+    html += rSec('📊 월간 합계');
+    html += rStatGrid([
+      {lbl:'평균 수면', val: mSleep.avgDur+(mSleep.avgDur!=='—'?'h':'')},
+      {lbl:'취침', val: mSleep.avgBed},
+      {lbl:'기상', val: mSleep.avgWake},
+    ]);
+    html += rActBars(mCat);
+    html += `<div style="font-size:13px; color:#8e8e93; margin-top:6px;">할일 완료 ${mTodos.length}건 · 기분 평균 ${mMood.avg}${mMood.avg!=='—'?'/5':''}</div>`;
+
+  } else {
+    // Year
+    const y = setup.year;
+    html += `<div style="font-size:13px; font-weight:600; margin-bottom:12px; color:#4e6880;">📅 ${y}년</div>`;
+
+    for (let m = 0; m < 12; m++) {
+      const mStart = new Date(y, m, 1);
+      const mEnd   = new Date(y, m+1, 0, 23,59,59,999);
+      const sleep  = reportSleepStats(sessions, mStart, mEnd);
+      const catStats = reportActStats(acts, mStart, mEnd, ACT_CATEGORIES, ACT_COLORS);
+      const mood   = reportMoodStats(data.moodLogs, mStart, mEnd);
+      const todos  = reportTodosInRange(todoLogs, mStart, mEnd);
+      const actGrand = catStats.reduce((s,c)=>s+c.total,0);
+      if (sleep.count === 0 && actGrand === 0 && !mood.entries.length && !todos.length) continue;
+
+      html += `<div style="background:#f8f8fa; border-radius:8px; padding:12px; margin-bottom:8px;">`;
+      html += `<div style="font-size:12px; font-weight:700; color:#4e6880; margin-bottom:8px;">${m+1}월</div>`;
+      html += rStatGrid([
+        {lbl:'평균 수면', val: sleep.avgDur+(sleep.avgDur!=='—'?'h':'')},
+        {lbl:'취침', val: sleep.avgBed},
+        {lbl:'기상', val: sleep.avgWake},
+      ]);
+      if (actGrand > 0) html += rActBars(catStats);
+      const parts = [];
+      if (todos.length) parts.push(`할일 ${todos.length}건`);
+      if (mood.entries.length) parts.push(`기분 평균 ${mood.avg}/5`);
+      if (parts.length) html += `<div style="font-size:12px; color:#8e8e93; margin-top:4px;">${parts.join(' · ')}</div>`;
+      html += '</div>';
+    }
+
+    // Yearly totals
+    const yStart = new Date(y, 0, 1), yEnd = new Date(y, 11, 31, 23,59,59,999);
+    const ySleep = reportSleepStats(sessions, yStart, yEnd);
+    const yCat   = reportActStats(acts, yStart, yEnd, ACT_CATEGORIES, ACT_COLORS);
+    const yMood  = reportMoodStats(data.moodLogs, yStart, yEnd);
+    const yTodos = reportTodosInRange(todoLogs, yStart, yEnd);
+    html += rSec(`📊 ${y}년 합계`);
+    html += rStatGrid([
+      {lbl:'평균 수면', val: ySleep.avgDur+(ySleep.avgDur!=='—'?'h':'')},
+      {lbl:'취침', val: ySleep.avgBed},
+      {lbl:'기상', val: ySleep.avgWake},
+    ]);
+    html += rActBars(yCat);
+    html += `<div style="font-size:13px; color:#8e8e93; margin-top:6px;">할일 완료 ${yTodos.length}건 · 기분 평균 ${yMood.avg}${yMood.avg!=='—'?'/5':''}</div>`;
   }
+
+  wrap.innerHTML = html;
 }
 
 function exportData() {
@@ -1332,6 +1619,7 @@ function importData(e) {
         medColors:     { ...current.medColors, ...(imported.medColors || {}) },
         actCategories: imported.actCategories || current.actCategories,
         todos:         [...(current.todos || []), ...(imported.todos || []).filter(t => !(current.todos||[]).find(x => x.id === t.id))],
+        moodLogs:      [...(current.moodLogs || []), ...(imported.moodLogs || []).filter(m => !(current.moodLogs||[]).find(x => x.date === m.date))],
         logs:          [...current.logs, ...imported.logs.filter(l => !existingIds.has(l.id))].sort((a,b) => new Date(a.ts)-new Date(b.ts))
       };
       save(merged);
@@ -1362,6 +1650,8 @@ updateClock();
 setInterval(updateClock, 30000);
 setNow();
 setActNow();
+const _yl = document.getElementById('year-label');
+if (_yl) _yl.textContent = `${chartYear}년`;
 render();
 </script>
 </body>
