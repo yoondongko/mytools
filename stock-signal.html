@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>???ъ????좏샇??/title>
+<title>내 포지션 신호등</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -49,7 +49,7 @@
     100%{box-shadow:0 0 0 0 rgba(232,65,66,0);}
   }
 
-  /* ?? 異붽? ???? */
+  /* 종목 추가 폼 */
   .add-form{
     background:var(--card);
     border:1px solid var(--card-border);
@@ -73,7 +73,7 @@
   .add-form input::placeholder{color:#565C66;}
   .add-form input:focus{outline:none;border-color:var(--gold);}
 
-  /* 寃???섑띁 */
+  /* 검색 드롭다운 */
   .search-wrap{position:relative;flex:1;}
   .search-input{width:100%;display:block;}
   .search-input:focus{outline:none;border-color:var(--gold);}
@@ -112,7 +112,7 @@
   .add-btn:hover{opacity:.85;}
   .add-btn:disabled{opacity:.4;cursor:not-allowed;}
 
-  /* ?? 踰붾? ?? */
+  /* 범례 */
   .legend{
     display:flex;flex-wrap:wrap;gap:10px;
     margin-bottom:24px;font-size:12px;color:var(--text-dim);
@@ -120,7 +120,7 @@
   .legend span{display:flex;align-items:center;gap:5px;}
   .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;}
 
-  /* ?? 移대뱶 ?? */
+  /* 종목 카드 */
   .card{
     background:var(--card);border:1px solid var(--card-border);
     border-radius:14px;padding:18px 20px;margin-bottom:14px;
@@ -137,7 +137,7 @@
   }
   .badge.none{background:#262B33;color:var(--text-dim);}
 
-  /* ?섏튂 洹몃━??(4??횞 2?? */
+  /* 숫자 그리드(4열 x 2행) */
   .numbers{
     display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
     font-family:'JetBrains Mono',monospace;margin-bottom:16px;
@@ -164,7 +164,7 @@
   .pnl-down{color:var(--down);}
   .pnl-flat{color:var(--neutral);}
 
-  /* 寃뚯씠吏 */
+  /* 게이지 */
   .gauge{display:flex;gap:3px;height:34px;border-radius:8px;overflow:hidden;}
   .seg{
     flex:1;display:flex;align-items:center;justify-content:center;
@@ -182,7 +182,7 @@
   .seg.s6{background:var(--up);}
   .seg.s7{background:var(--very-up);}
 
-  /* 嫄곕옒 ?낅젰 諛?*/
+  /* 매매 입력 바 */
   .trade-bar{
     display:grid;grid-template-columns:1fr 1fr;gap:8px;
     margin-top:12px;padding-top:12px;border-top:1px solid var(--card-border);
@@ -217,7 +217,7 @@
   .buy-btn{background:var(--up);color:#fff;}
   .sell-btn{background:var(--down);color:#fff;}
 
-  /* 吏곸쟾 留ㅻ룄 ?먯씡 */
+  /* 직전 매도 정보 표시 */
   .last-sell{
     margin-top:8px;padding:7px 12px;border-radius:8px;
     font-size:12px;font-family:'JetBrains Mono',monospace;
@@ -265,15 +265,14 @@
 </style>
 </head>
 <body>
-<script src="auth.js"></script>
 
 <div class="wrap">
   <header>
-    <h1>???ъ????좏샇??/h1>
-    <p>留ㅼ엯?됯퇏?④? ?鍮?/ ?꾩씪媛 ?鍮??깅씫瑜좎쓣 湲곗??쇰줈 留ㅻℓ ?좏샇瑜??뚮젮以띾땲??</p>
+    <h1>내 포지션 신호등</h1>
+    <p>매입평균단가 대비 / 전일가 대비 등락률을 기준으로 매매 신호를 알려줍니다.</p>
     <div class="status-line">
       <span class="dot" id="liveDot"></span>
-      <span id="statusText">?湲?以?/span>
+      <span id="statusText">대기 중</span>
     </div>
   </header>
 
@@ -283,79 +282,51 @@
     <input type="file" id="importFile" accept=".json" style="display:none">
   </div>
 
-
   <div class="add-form">
     <div class="add-row">
       <div class="search-wrap">
         <input type="text" class="search-input" id="inSearch"
-          placeholder="醫낅ぉ紐??먮뒗 肄붾뱶 寃??(?? ?쇱꽦?꾩옄, 005930)"
+          placeholder="종목명 또는 코드 검색 (예: 삼성전자, 005930)"
           autocomplete="off">
         <ul class="search-dropdown" id="searchDropdown"></ul>
       </div>
     </div>
     <div class="add-row">
-      <input type="number" id="inAvg" class="num-input" placeholder="留ㅼ엯?됯퇏?④?" inputmode="numeric">
-      <input type="number" id="inQty" class="qty-input" placeholder="?섎웾 (二?" inputmode="numeric">
-      <button class="add-btn" id="addBtn" disabled>異붽?</button>
+      <input type="number" id="inAvg" class="num-input" placeholder="매입평균단가" inputmode="numeric">
+      <input type="number" id="inQty" class="qty-input" placeholder="수량 (주)" inputmode="numeric">
+      <button class="add-btn" id="addBtn" disabled>추가</button>
     </div>
     <div id="selectedInfo" style="font-size:12px;color:var(--text-dim);padding-left:2px;display:none;">
-      ?좏깮?? <span id="selectedLabel" style="color:var(--gold);font-weight:700;"></span>
+      선택됨: <span id="selectedLabel" style="color:var(--gold);font-weight:700;"></span>
     </div>
   </div>
 
   <div class="legend">
-    <span><i style="background:var(--very-down)"></i>留ㅼ슦 ?먯젅 異붿쿇</span>
-    <span><i style="background:var(--down)"></i>?먯젅 異붿쿇</span>
-    <span><i style="background:#3A3F48"></i>愿留?/span>
-    <span><i style="background:var(--gold)"></i>臾쇳?湲?異붿쿇</span>
-    <span><i style="background:#4A4F58"></i>踰꾪떚湲?/span>
-    <span><i style="background:#FFA84A"></i>留ㅻ룄 ?섏씡??媛??/span>
-    <span><i style="background:var(--up)"></i>?곸듅??/span>
-    <span><i style="background:var(--very-up)"></i>留ㅼ슦?곸듅??/span>
+    <span><i style="background:var(--very-down)"></i>매우 손절 추천</span>
+    <span><i style="background:var(--down)"></i>손절 추천</span>
+    <span><i style="background:#3A3F48"></i>관망</span>
+    <span><i style="background:var(--gold)"></i>물타기 추천</span>
+    <span><i style="background:#4A4F58"></i>버티기</span>
+    <span><i style="background:#FFA84A"></i>매도 수익화 가능</span>
+    <span><i style="background:var(--up)"></i>상승장</span>
+    <span><i style="background:var(--very-up)"></i>매우상승장</span>
   </div>
 
   <div id="cards"></div>
   <div class="empty" id="emptyMsg" style="display:none;">
-    ?꾩쭅 ?깅줉??醫낅ぉ???놁뒿?덈떎. ?꾩뿉??醫낅ぉ??寃?됲빐 異붽??섏꽭??
+    아직 등록된 종목이 없습니다. 위에서 종목코드를 검색해 추가하세요.
   </div>
 
   <div class="notice">
-    <b>李멸퀬</b><br>
-    쨌 媛寃⑹? 60珥덈쭏???먮룞 議고쉶瑜??쒕룄?⑸땲?? CORS ?뺤콉?쇰줈 李⑤떒?섎㈃ "?먮룞議고쉶 ?ㅽ뙣"濡??쒖떆?섎ŉ, ??寃쎌슦 移대뱶??<b>?꾩옱媛 / ?꾩씪媛</b> 移몄쓣 吏곸젒 ?낅젰?댁＜?몄슂.<br>
-    쨌 <b>留ㅼ닔</b> ?곸슜 ???섎웾쨌?④?濡??됯퇏?④?媛 ?먮룞 ?ш퀎?곕맗?덈떎.<br>
-    쨌 <b>留ㅻ룄</b> ?곸슜 ???섎웾??李④컧?섍퀬 吏곸쟾 留ㅻ룄 ?ㅽ쁽?먯씡??移대뱶???쒖떆?⑸땲??(?꾩쟻 ?꾨떂).<br>
-    쨌 醫낅ぉ ?뺣낫????釉뚮씪?곗??먮쭔 ??λ맗?덈떎.
+    <b>참고</b><br>
+    · 가격은 60초마다 자동 조회를 시도합니다. CORS 정책으로 실패하면 "자동조회 실패"로 표시되며, 이 경우 카드의 <b>현재가 / 전일가</b> 칸을 직접 입력해주세요.<br>
+    · <b>매수</b> 적용 시 수량·평균단가가 자동 계산됩니다.<br>
+    · <b>매도</b> 적용 시 수량은 차감되고 직전 매도 수익현황이 카드에 표시됩니다 (일시적 표시).<br>
+    · 종목 정보는 이 브라우저에만 저장됩니다.
   </div>
 </div>
 
 <script>
-// ---------- ?뷀샇 寃뚯씠??----------
-(function(){
-  const PASS = '1029';
-  const gate = document.getElementById('passGate');
-  if(sessionStorage.getItem('auth') === 'ok'){ gate.remove(); return; }
-
-  function tryUnlock(){
-    const input = document.getElementById('passInput');
-    if(input.value === PASS){
-      sessionStorage.setItem('auth', 'ok');
-      gate.style.transition = 'opacity .2s';
-      gate.style.opacity = '0';
-      setTimeout(()=> gate.remove(), 200);
-    } else {
-      document.getElementById('passErr').textContent = '?뷀샇媛 ??몄뒿?덈떎';
-      input.value = '';
-      input.focus();
-    }
-  }
-
-  document.getElementById('passBtn').addEventListener('click', tryUnlock);
-  document.getElementById('passInput').addEventListener('keydown', e=>{
-    if(e.key === 'Enter') tryUnlock();
-    else document.getElementById('passErr').textContent = '';
-  });
-})();
-
 const REFRESH_MS = 60000;
 let holdings = [];
 
@@ -373,7 +344,7 @@ function loadHoldings(){
 }
 function saveHoldings(){
   try{ localStorage.setItem('holdings', JSON.stringify(holdings)); }
-  catch(e){ console.error('????ㅽ뙣', e); }
+  catch(e){ console.error('저장 실패', e); }
 }
 
 // ---------- status ----------
@@ -381,19 +352,19 @@ function computeStatus(avg, current, prev){
   if(!avg || !current) return {label:null, seg:null, pct:null};
   if(current < avg){
     const d = (avg - current) / avg * 100;
-    if(d > 10) return {label:'留ㅼ슦 ?먯젅 異붿쿇', seg:0, pct:-d};
-    if(d > 7)  return {label:'?먯젅 異붿쿇',      seg:1, pct:-d};
+    if(d > 10) return {label:'매우 손절 추천', seg:0, pct:-d};
+    if(d > 7)  return {label:'손절 추천',      seg:1, pct:-d};
     if(d > 5)  return {label:null,             seg:2, pct:-d};
-    return              {label:'臾쇳?湲?異붿쿇',   seg:3, pct:-d};
+    return              {label:'물타기 추천',   seg:3, pct:-d};
   }
   if(!prev) return {label:null, seg:4, pct:null};
   const c = (current - prev) / prev * 100;
-  if(c < -5)  return {label:'留ㅻ룄 ?섏씡??媛??, seg:5, pct:c};
-  if(c <= 0)  return {label:'踰꾪떚湲?,           seg:4, pct:c};
-  if(c <= 15) return {label:'?곸듅??,           seg:6, pct:c};
-  return              {label:'留ㅼ슦?곸듅??,       seg:7, pct:c};
+  if(c < -5)  return {label:'매도 수익화 가능', seg:5, pct:c};
+  if(c <= 0)  return {label:'버티기',           seg:4, pct:c};
+  if(c <= 15) return {label:'상승장',           seg:6, pct:c};
+  return              {label:'매우상승장',       seg:7, pct:c};
 }
-const SEG_LABELS = ['留ㅼ슦?먯젅','?먯젅','愿留?,'臾쇳?湲?,'踰꾪떚湲?,'?섏씡?붽???,'?곸듅??,'留ㅼ슦?곸듅??];
+const SEG_LABELS = ['매우손절','손절','관망','물타기','버티기','수익화가능','상승장','매우상승장'];
 
 // ---------- price fetch ----------
 async function fetchPrice(code){
@@ -426,8 +397,8 @@ async function refreshAll(){
 function setStatus(ok){
   document.getElementById('liveDot').className = ok ? 'dot live' : 'dot';
   document.getElementById('statusText').textContent = ok
-    ? '?먮룞議고쉶 ?뺤긽 ??60珥덈쭏??媛깆떊 以?
-    : '?먮룞議고쉶 ?ㅽ뙣 ???꾩옱媛/?꾩씪媛瑜?吏곸젒 ?낅젰?댁＜?몄슂';
+    ? '자동조회 정상 — 60초마다 갱신 중'
+    : '자동조회 실패 — 현재가/전일가를 직접 입력해주세요';
 }
 
 // ---------- trade ----------
@@ -454,7 +425,7 @@ function fmtNum(n){ return (n == null || isNaN(n)) ? '-' : Number(n).toLocaleStr
 function fmtPct(p){ return p == null ? '-' : `${p>0?'+':''}${p.toFixed(2)}%`; }
 function fmtPnl(n){
   if(n == null || isNaN(n)) return '-';
-  return `${n>0?'+':''}${Math.round(n).toLocaleString()}??;
+  return `${n>0?'+':''}${Math.round(n).toLocaleString()}원`;
 }
 function pctCls(p){ return !p ? 'pct-flat' : p>0 ? 'pct-up' : 'pct-down'; }
 function pnlCls(n){ return !n||isNaN(n) ? 'pnl-flat' : n>0 ? 'pnl-up' : 'pnl-down'; }
@@ -491,11 +462,11 @@ function render(){
     const invest   = (avg && qty) ? avg*qty : null;
     const evalAmt  = (current && qty) ? current*qty : null;
     const pnlAmt   = (invest != null && evalAmt != null) ? evalAmt-invest : null;
-    const manual   = h.manual ? '<span style="color:var(--gold);font-size:10px">(?섎룞)</span>' : '';
+    const manual   = h.manual ? '<span style="color:var(--gold);font-size:10px">(수동)</span>' : '';
 
     const badgeHtml = st.label
       ? `<span class="badge" style="background:${segColor(st.seg)};color:#0F1115">${st.label}</span>`
-      : `<span class="badge none">愿留?/span>`;
+      : `<span class="badge none">관망</span>`;
 
     let lastSellHtml = '';
     if(h.lastSell){
@@ -503,7 +474,7 @@ function render(){
       const cls = s.pnl >= 0 ? 'pnl-up' : 'pnl-down';
       lastSellHtml = `
         <div class="last-sell">
-          <span>吏곸쟾 留ㅻ룄 ${fmtDate(s.at)} 쨌 ${s.qty}二?@ ${fmtNum(s.price)}</span>
+          <span>직전 매도 ${fmtDate(s.at)} · ${s.qty}주 @ ${fmtNum(s.price)}</span>
           <span class="pnl-val ${cls}">${fmtPnl(s.pnl)}</span>
         </div>`;
     }
@@ -520,38 +491,38 @@ function render(){
       </div>
       <div class="numbers">
         <div class="box">
-          <label>留ㅼ엯?됯퇏?④?</label>
+          <label>매입평균단가</label>
           <div class="val">${fmtNum(avg)}</div>
         </div>
         <div class="box">
-          <label>?꾩옱媛 ${manual}</label>
-          <input type="number" data-idx="${idx}" data-field="current" value="${h.current??''}" placeholder="?낅젰">
+          <label>현재가 ${manual}</label>
+          <input type="number" data-idx="${idx}" data-field="current" value="${h.current??''}" placeholder="입력">
         </div>
         <div class="box">
-          <label>?꾩씪媛 ${manual}</label>
-          <input type="number" data-idx="${idx}" data-field="prev" value="${h.prev??''}" placeholder="?낅젰">
+          <label>전일가 ${manual}</label>
+          <input type="number" data-idx="${idx}" data-field="prev" value="${h.prev??''}" placeholder="입력">
         </div>
         <div class="box">
-          <label>留ㅼ엯媛 ?鍮?/ ?꾩씪媛 ?鍮?/label>
+          <label>매입가 대비 / 전일가 대비</label>
           <div class="val">
             <span class="${pctCls(diffAvg)}">${fmtPct(diffAvg)}</span> /
             <span class="${pctCls(diffPrev)}">${fmtPct(diffPrev)}</span>
           </div>
         </div>
         <div class="box">
-          <label>蹂댁쑀?섎웾</label>
-          <input type="number" data-idx="${idx}" data-field="qty" value="${qty||''}" placeholder="?섎웾">
+          <label>보유수량</label>
+          <input type="number" data-idx="${idx}" data-field="qty" value="${qty||''}" placeholder="수량">
         </div>
         <div class="box">
-          <label>?ъ옄?먭툑</label>
+          <label>투자금액</label>
           <div class="val">${fmtNum(invest)}</div>
         </div>
         <div class="box">
-          <label>?됯?湲덉븸</label>
+          <label>평가금액</label>
           <div class="val">${evalAmt!=null ? fmtNum(Math.round(evalAmt)) : '-'}</div>
         </div>
         <div class="box">
-          <label>?됯??먯씡</label>
+          <label>평가손익</label>
           <div class="val ${pnlCls(pnlAmt)}">${fmtPnl(pnlAmt)}</div>
         </div>
       </div>
@@ -560,31 +531,31 @@ function render(){
       </div>
       <div class="trade-bar">
         <div class="trade-section">
-          <span class="trade-label buy">留ㅼ닔</span>
-          <input type="number" class="t-qty" placeholder="?섎웾" min="1">
-          <input type="number" class="t-price" placeholder="?④?">
-          <button class="trade-btn buy-btn" data-idx="${idx}" data-action="buy">?곸슜</button>
+          <span class="trade-label buy">매수</span>
+          <input type="number" class="t-qty" placeholder="수량" min="1">
+          <input type="number" class="t-price" placeholder="가격">
+          <button class="trade-btn buy-btn" data-idx="${idx}" data-action="buy">적용</button>
         </div>
         <div class="trade-section">
-          <span class="trade-label sell">留ㅻ룄</span>
-          <input type="number" class="t-qty" placeholder="?섎웾" min="1">
-          <input type="number" class="t-price" placeholder="留ㅻ룄媛">
-          <button class="trade-btn sell-btn" data-idx="${idx}" data-action="sell">?곸슜</button>
+          <span class="trade-label sell">매도</span>
+          <input type="number" class="t-qty" placeholder="수량" min="1">
+          <input type="number" class="t-price" placeholder="매도가">
+          <button class="trade-btn sell-btn" data-idx="${idx}" data-action="sell">적용</button>
         </div>
       </div>
       ${lastSellHtml}
       <div class="card-foot">
         <div class="foot-dates">
-          <span>?깅줉: ${fmtDate(h.addedAt)}</span>
-          <span>${h.lastUpdate ? '媛깆떊: '+fmtDate(h.lastUpdate) : '?꾩쭅 媛깆떊 ?덈맖'}</span>
+          <span>등록: ${fmtDate(h.addedAt)}</span>
+          <span>${h.lastUpdate ? '갱신: '+fmtDate(h.lastUpdate) : '아직 갱신 안됨'}</span>
         </div>
-        <button data-remove="${idx}">??젣</button>
+        <button data-remove="${idx}">삭제</button>
       </div>
     `;
     container.appendChild(card);
   });
 
-  // ?꾩옱媛 / ?꾩씪媛 ?섎룞 ?낅젰
+  // 현재가 / 전일가 수동 입력
   container.querySelectorAll('input[data-field="current"], input[data-field="prev"]').forEach(inp=>{
     inp.addEventListener('change', async e=>{
       const idx = +e.target.dataset.idx, field = e.target.dataset.field, v = e.target.value;
@@ -595,7 +566,7 @@ function render(){
     });
   });
 
-  // 蹂댁쑀?섎웾 吏곸젒 ?섏젙
+  // 보유수량 직접 설정
   container.querySelectorAll('input[data-field="qty"]').forEach(inp=>{
     inp.addEventListener('change', async e=>{
       const idx = +e.target.dataset.idx, v = e.target.value;
@@ -604,7 +575,7 @@ function render(){
     });
   });
 
-  // 留ㅼ닔 / 留ㅻ룄
+  // 매수 / 매도
   container.querySelectorAll('button[data-action]').forEach(btn=>{
     btn.addEventListener('click', async e=>{
       const idx    = +e.target.dataset.idx;
@@ -613,7 +584,7 @@ function render(){
       const qty    = Number(sec.querySelector('.t-qty').value);
       const price  = Number(sec.querySelector('.t-price').value);
       if(!qty || qty <= 0 || !price || price <= 0){
-        alert('?섎웾怨?媛寃⑹쓣 ?щ컮瑜닿쾶 ?낅젰?댁＜?몄슂.'); return;
+        alert('수량과 가격을 모두 입력해주세요.'); return;
       }
       if(action === 'buy') applyBuy(idx, qty, price);
       else                 applySell(idx, qty, price);
@@ -623,7 +594,7 @@ function render(){
     });
   });
 
-  // ??젣
+  // 삭제
   container.querySelectorAll('button[data-remove]').forEach(btn=>{
     btn.addEventListener('click', async e=>{
       holdings.splice(+e.target.dataset.remove, 1);
@@ -632,7 +603,7 @@ function render(){
   });
 }
 
-// ---------- 醫낅ぉ 寃??----------
+// ---------- 종목 검색 ----------
 let selCode = '', selName = '';
 let searchTimer = null;
 
@@ -655,7 +626,6 @@ async function doSearch(q){
     const items = (data.items || []).slice(0, 8).map(i=>({name:i[0], code:i[2]})).filter(i=>i.code);
     showDD(items);
   }catch(e){
-    // CORS ???ㅽ뙣 ??吏곸젒 ?낅젰 ?덈궡
     showDD([], true);
   }
 }
@@ -664,12 +634,11 @@ function showDD(items, corsBlocked=false){
   const dd = document.getElementById('searchDropdown');
   dd.innerHTML = '';
   if(corsBlocked){
-    dd.innerHTML = `<li class="search-no-result">?먮룞寃??遺덇? ??醫낅ぉ肄붾뱶(6?먮━)瑜?吏곸젒 ?낅젰 ???좏깮?댁＜?몄슂<br><small style="color:#565C66">?먮뒗 濡쒖뺄 ?뚯씪濡??댁뼱蹂댁꽭??/small></li>`;
-    // 吏곸젒 ?낅젰 肄붾뱶 泥섎━
+    dd.innerHTML = `<li class="search-no-result">자동검색이 안될 때 종목코드(6자리)를 직접 입력 후 선택해주세요<br><small style="color:#565C66">또는 다른 브라우저에서 열어보세요</small></li>`;
     const searchInput = document.getElementById('inSearch').value.trim();
     if(/^\d{6}$/.test(searchInput)){
       const li = document.createElement('li');
-      li.innerHTML = `<span>肄붾뱶 ${searchInput} 吏곸젒 ?ъ슜</span><span class="s-code">${searchInput}</span>`;
+      li.innerHTML = `<span>코드 ${searchInput} 직접 사용</span><span class="s-code">${searchInput}</span>`;
       li.addEventListener('click', ()=>{
         selCode = searchInput; selName = searchInput;
         selectStock(searchInput, searchInput);
@@ -693,18 +662,18 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.search-wrap')) cl
 function selectStock(code, name){
   selCode = code; selName = name;
   document.getElementById('inSearch').value = `${name} (${code})`;
-  document.getElementById('selectedLabel').textContent = `${name} 쨌 ${code}`;
+  document.getElementById('selectedLabel').textContent = `${name} · ${code}`;
   document.getElementById('selectedInfo').style.display = 'block';
   document.getElementById('addBtn').disabled = false;
   closeDD();
 }
 
-// ---------- 異붽? ----------
+// ---------- 추가 ----------
 document.getElementById('addBtn').addEventListener('click', async ()=>{
-  if(!selCode || !selName){ alert('醫낅ぉ??癒쇱? 寃?됲빐???좏깮?댁＜?몄슂.'); return; }
+  if(!selCode || !selName){ alert('종목을 먼저 선택해주세요.'); return; }
   const avg = document.getElementById('inAvg').value.trim();
   const qty = document.getElementById('inQty').value.trim();
-  if(!avg || !qty){ alert('留ㅼ엯?됯퇏?④?? ?섎웾???낅젰?댁＜?몄슂.'); return; }
+  if(!avg || !qty){ alert('매입평균단가와 수량을 입력해주세요.'); return; }
   holdings.push({
     code: selCode, name: selName,
     avg: Number(avg), qty: Number(qty),

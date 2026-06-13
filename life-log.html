@@ -124,6 +124,32 @@
     .del-btn { background: none; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; }
     .empty-msg { font-size: 14px; color: #8e8e93; padding: 4px 0; }
 
+    .dt-row { display: flex; gap: 8px; }
+    .dt-row input {
+      flex: 1;
+      border: 1.5px solid #e5e5ea;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+    .dt-row input:focus { border-color: #007aff; }
+    .now-btn { background: none; border: none; color: #007aff; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-header .card-title { margin-bottom: 0; }
+    .del-btn { background: #fff0f0; border: none; color: #ff3b30; font-size: 12px; cursor: pointer; border-radius: 6px; padding: 3px 8px; }
+
+    /* Activity */
+    .act-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .act-input-row { display: flex; align-items: center; gap: 8px; }
+    .act-lbl { font-size: 13px; color: #8e8e93; width: 28px; flex-shrink: 0; }
+    .act-input-row input { flex: 1; border: 1.5px solid #e5e5ea; border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none; font-family: inherit; }
+    .act-input-row input:focus { border-color: #007aff; }
+    .act-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    .act-btn { background: #f2f2f7; border: none; border-radius: 20px; padding: 9px 14px; font-size: 14px; cursor: pointer; color: #1d1d1f; }
+    .act-btn:active { opacity: 0.7; }
+
     #auth-overlay {
       position: fixed; inset: 0;
       background: #f2f2f7;
@@ -197,6 +223,17 @@
   </div>
 
   <div class="card">
+    <div class="card-header">
+      <div class="card-title">기록 시각</div>
+      <button class="now-btn" onclick="setNow()">지금으로</button>
+    </div>
+    <div class="dt-row">
+      <input type="date" id="log-date">
+      <input type="time" id="log-time">
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">수면</div>
     <button id="sleep-btn" onclick="toggleSleep()">😴 잠든다</button>
     <div class="sleep-hint" id="sleep-hint"></div>
@@ -208,17 +245,54 @@
   </div>
 
   <div class="card">
+    <div class="card-header">
+      <div class="card-title">시간 기록</div>
+      <button class="now-btn" onclick="setActNow()">지금으로</button>
+    </div>
+    <div class="act-inputs">
+      <div class="act-input-row">
+        <span class="act-lbl">시작</span>
+        <input type="date" id="act-start-date">
+        <input type="time" id="act-start-time">
+      </div>
+      <div class="act-input-row">
+        <span class="act-lbl">종료</span>
+        <input type="date" id="act-end-date">
+        <input type="time" id="act-end-time">
+      </div>
+      <div class="act-input-row">
+        <span class="act-lbl">내용</span>
+        <input type="text" id="act-content" placeholder="메모 (선택)" style="border-radius:8px;">
+      </div>
+    </div>
+    <div class="act-btns">
+      <button class="act-btn" onclick="logActivity('공부')">📚 공부</button>
+      <button class="act-btn" onclick="logActivity('자기계발')">🌱 자기계발</button>
+      <button class="act-btn" onclick="logActivity('생활')">🏠 생활</button>
+      <button class="act-btn" onclick="logActivity('가족')">👨‍👩‍👧 가족</button>
+      <button class="act-btn" onclick="logActivity('취업준비')">💼 취업준비</button>
+      <button class="act-btn" onclick="logActivity('기타')">⭐ 기타</button>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">그래프</div>
     <div class="tab-row">
       <button class="tab active" data-chart="duration" onclick="switchChart('duration')">수면 시간</button>
       <button class="tab" data-chart="timing" onclick="switchChart('timing')">수면 타이밍</button>
       <button class="tab" data-chart="med" onclick="switchChart('med')">복약 타이밍</button>
+      <button class="tab" data-chart="activity" onclick="switchChart('activity')">시간 분석</button>
+      <button class="tab" data-chart="report" onclick="switchChart('report')">종합 리포트</button>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div id="report-wrap" style="display:none;"></div>
   </div>
 
   <div class="card">
-    <div class="card-title">최근 기록</div>
+    <div class="card-header">
+      <div class="card-title">최근 기록</div>
+      <button class="now-btn" style="color:#ff3b30;" onclick="clearAllLogs()">전체 삭제</button>
+    </div>
     <div id="log-items"></div>
   </div>
 
@@ -317,19 +391,75 @@ function getSessions(logs) {
 
 // ── Actions ───────────────────────────────────────────────────────
 
+const ACT_CATEGORIES = ['공부', '자기계발', '생활', '가족', '취업준비', '기타'];
+const ACT_COLORS     = ['#a8d85a', '#f5d020', '#5bb3f0', '#c5a8e8', '#f472b6', '#90abc0'];
+// 공부=연두, 자기계발=개나리, 생활=밝은블루, 가족=연보라, 취업준비=핑크, 기타=스카이블루그레이
+const ACT_EMOJI      = { '공부':'📚', '자기계발':'🌱', '생활':'🏠', '가족':'👨‍👩‍👧', '취업준비':'💼', '기타':'⭐' };
+
+function setNow() {
+  const now = new Date();
+  document.getElementById('log-date').value = now.toISOString().slice(0, 10);
+  document.getElementById('log-time').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+function getLogTs() {
+  const date = document.getElementById('log-date').value;
+  const time = document.getElementById('log-time').value;
+  if (!date || !time) return new Date().toISOString();
+  return new Date(`${date}T${time}`).toISOString();
+}
+
 function toggleSleep() {
   const data = load();
   const sleepLogs = data.logs.filter(l => l.type === 'sleep_start' || l.type === 'sleep_end');
   const last = sleepLogs[sleepLogs.length - 1];
   const isSleeping = last && last.type === 'sleep_start';
-  data.logs.push({ id: String(Date.now()), type: isSleeping ? 'sleep_end' : 'sleep_start', ts: new Date().toISOString() });
+  data.logs.push({ id: String(Date.now()), type: isSleeping ? 'sleep_end' : 'sleep_start', ts: getLogTs() });
+  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
   save(data);
   render();
 }
 
 function logMed(name) {
   const data = load();
-  data.logs.push({ id: String(Date.now()), type: 'med', name, ts: new Date().toISOString() });
+  data.logs.push({ id: String(Date.now()), type: 'med', name, ts: getLogTs() });
+  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  save(data);
+  render();
+}
+
+function setActNow() {
+  const now = new Date();
+  const d = now.toISOString().slice(0, 10);
+  const t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('act-start-date').value = d;
+  document.getElementById('act-start-time').value = t;
+  document.getElementById('act-end-date').value = d;
+  document.getElementById('act-end-time').value = t;
+}
+
+function logActivity(category) {
+  const sd = document.getElementById('act-start-date').value;
+  const st = document.getElementById('act-start-time').value;
+  const ed = document.getElementById('act-end-date').value;
+  const et = document.getElementById('act-end-time').value;
+  if (!sd || !st || !ed || !et) { alert('시작/종료 시각을 모두 입력해주세요'); return; }
+  const startTs = new Date(`${sd}T${st}`).toISOString();
+  const endTs   = new Date(`${ed}T${et}`).toISOString();
+  if (new Date(endTs) <= new Date(startTs)) { alert('종료 시각이 시작 시각보다 늦어야 합니다'); return; }
+  const content = document.getElementById('act-content').value.trim();
+  const data = load();
+  data.logs.push({ id: String(Date.now()), type: 'activity', category, ts: startTs, endTs, content });
+  data.logs.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  save(data);
+  document.getElementById('act-content').value = '';
+  render();
+}
+
+function clearAllLogs() {
+  if (!confirm('모든 기록을 삭제할까요?')) return;
+  const data = load();
+  data.logs = [];
   save(data);
   render();
 }
@@ -463,12 +593,25 @@ function renderLogs(data) {
     return;
   }
   el.innerHTML = recent.map(l => {
-    const label = l.type === 'med' ? `💊 ${l.name}` :
-                  l.type === 'sleep_start' ? '😴 취침' : '☀️ 기상';
+    let label, timeStr;
+    if (l.type === 'med') {
+      label = `💊 ${l.name}`;
+      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+    } else if (l.type === 'sleep_start') {
+      label = '😴 취침';
+      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+    } else if (l.type === 'sleep_end') {
+      label = '☀️ 기상';
+      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}`;
+    } else if (l.type === 'activity') {
+      const dur = ((new Date(l.endTs) - new Date(l.ts)) / 3600000).toFixed(1);
+      label = `${ACT_EMOJI[l.category] || '⏱'} ${l.category}${l.content ? ' · ' + l.content : ''} (${dur}h)`;
+      timeStr = `${fmtDate(l.ts)} ${fmtTime(l.ts)}–${fmtTime(l.endTs)}`;
+    }
     return `<div class="log-row">
-      <span>${label}</span>
+      <span style="flex:1; margin-right:8px;">${label}</span>
       <span class="log-meta">
-        <span class="log-time-str">${fmtDate(l.ts)} ${fmtTime(l.ts)}</span>
+        <span class="log-time-str">${timeStr}</span>
         <button class="del-btn" onclick="deleteLog('${l.id}')">삭제</button>
       </span>
     </div>`;
@@ -479,6 +622,9 @@ function renderLogs(data) {
 
 function renderChart(data) {
   if (chartInst) { chartInst.destroy(); chartInst = null; }
+  document.getElementById('chart').style.display = activeChart === 'report' ? 'none' : 'block';
+  document.getElementById('report-wrap').style.display = activeChart === 'report' ? 'block' : 'none';
+  if (activeChart === 'report') { renderReport(data); return; }
   const ctx = document.getElementById('chart').getContext('2d');
   const days = last14Days();
 
@@ -500,7 +646,7 @@ function renderChart(data) {
         datasets: [{
           label: '수면 시간 (h)',
           data: days.map(d => durByDay[d] != null ? +durByDay[d].toFixed(2) : null),
-          backgroundColor: '#5e9bdb',
+          backgroundColor: '#4e6880',
           borderRadius: 5,
         }]
       },
@@ -531,8 +677,8 @@ function renderChart(data) {
       type: 'scatter',
       data: {
         datasets: [
-          { label: '취침', data: sleepPts, backgroundColor: '#1c1c1e', pointRadius: 7 },
-          { label: '기상', data: wakePts, backgroundColor: '#34c759', pointRadius: 7 }
+          { label: '취침', data: sleepPts, backgroundColor: '#4e6880', pointRadius: 7 },
+          { label: '기상', data: wakePts, backgroundColor: '#7898ae', pointRadius: 7 }
         ]
       },
       options: {
@@ -544,8 +690,36 @@ function renderChart(data) {
       }
     });
 
+  } else if (activeChart === 'activity') {
+    const acts = data.logs.filter(l => l.type === 'activity');
+    chartInst = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: days,
+        datasets: ACT_CATEGORIES.map((cat, ci) => ({
+          label: cat,
+          data: days.map(day => {
+            const total = acts
+              .filter(l => l.category === cat && fmtDate(l.ts) === day)
+              .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
+            return total > 0 ? +total.toFixed(2) : null;
+          }),
+          backgroundColor: ACT_COLORS[ci],
+          borderRadius: 3,
+          stack: 'act',
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { callback: v => v + 'h' } }
+        }
+      }
+    });
+
   } else {
-    const COLORS = ['#007aff','#ff3b30','#ff9500','#34c759','#af52de','#5ac8fa'];
+    const COLORS = ['#7898ae','#a0b8c8','#5e8fa8','#6ba0b8','#8ab0c4','#90abc0'];
     const dayIdx = Object.fromEntries(days.map((d, i) => [d, i]));
     const allNames = [...new Set(data.logs.filter(l => l.type === 'med').map(l => l.name))];
 
@@ -568,6 +742,76 @@ function renderChart(data) {
           x: { type: 'linear', min: -0.5, max: 13.5, ticks: { stepSize: 1, callback: v => days[Math.round(v)] || '' } },
           y: { min: 0, max: 24, ticks: { stepSize: 3, callback: v => `${String(v).padStart(2,'0')}:00` } }
         }
+      }
+    });
+  }
+}
+
+function renderReport(data) {
+  const wrap = document.getElementById('report-wrap');
+  const days = last14Days();
+  const sessions = getSessions(data.logs);
+  const acts = data.logs.filter(l => l.type === 'activity');
+
+  // 평균 수면 시간
+  const sleepHours = days.map(day => {
+    const s = sessions.find(s => s.end && fmtDate(s.end) === day);
+    return s ? (new Date(s.end) - new Date(s.start)) / 3600000 : 0;
+  }).filter(h => h > 0);
+  const avgSleep = sleepHours.length ? (sleepHours.reduce((a,b)=>a+b,0)/sleepHours.length).toFixed(1) : '—';
+
+  // 카테고리별 14일 합계
+  const catTotals = ACT_CATEGORIES.map(cat => {
+    const total = acts.filter(l => l.category === cat)
+      .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
+    return { cat, total };
+  });
+  const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
+
+  // 최근 7일 활동 비중
+  const last7 = days.slice(-7);
+  const cat7Totals = ACT_CATEGORIES.map((cat, ci) => {
+    const total = acts
+      .filter(l => l.category === cat && last7.includes(fmtDate(l.ts)))
+      .reduce((s, l) => s + (new Date(l.endTs) - new Date(l.ts)) / 3600000, 0);
+    return { cat, total, color: ACT_COLORS[ci] };
+  }).filter(c => c.total > 0);
+
+  wrap.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+      <div style="background:#eef1f5; border-radius:8px; padding:12px; text-align:center; border-left:4px solid #4e6880;">
+        <div style="font-size:11px; color:#8e8e93; margin-bottom:4px;">평균 수면</div>
+        <div style="font-size:22px; font-weight:700; color:#4e6880;">${avgSleep}<span style="font-size:13px; color:#8e8e93;">h</span></div>
+      </div>
+      <div style="background:#f2f2f7; border-radius:8px; padding:12px; text-align:center;">
+        <div style="font-size:11px; color:#8e8e93; margin-bottom:4px;">14일 활동 합계</div>
+        <div style="font-size:22px; font-weight:700;">${grandTotal.toFixed(1)}<span style="font-size:13px; color:#8e8e93;">h</span></div>
+      </div>
+    </div>
+    <div style="font-size:12px; color:#8e8e93; margin-bottom:8px; font-weight:600; letter-spacing:0.5px;">카테고리별 합계 (14일)</div>
+    ${catTotals.map((c, i) => `
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+        <span style="width:70px; font-size:13px;">${ACT_EMOJI[c.cat]} ${c.cat}</span>
+        <div style="flex:1; background:#f2f2f7; border-radius:4px; height:10px; overflow:hidden;">
+          <div style="height:100%; width:${grandTotal>0?(c.total/grandTotal*100).toFixed(1):0}%; background:${ACT_COLORS[i]}; border-radius:4px;"></div>
+        </div>
+        <span style="font-size:13px; font-weight:600; width:36px; text-align:right;">${c.total.toFixed(1)}h</span>
+      </div>`).join('')}
+    ${cat7Totals.length ? `
+      <div style="font-size:12px; color:#8e8e93; margin-top:12px; margin-bottom:8px; font-weight:600; letter-spacing:0.5px;">최근 7일 비중</div>
+      <div style="position:relative; height:130px;"><canvas id="pie-chart"></canvas></div>` : ''}
+  `;
+
+  if (cat7Totals.length) {
+    new Chart(document.getElementById('pie-chart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: cat7Totals.map(c => c.cat),
+        datasets: [{ data: cat7Totals.map(c => +c.total.toFixed(2)), backgroundColor: cat7Totals.map(c => c.color), borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 8, boxWidth: 12 } } }
       }
     });
   }
@@ -610,6 +854,8 @@ function importData(e) {
   e.target.value = '';
 }
 
+setNow();
+setActNow();
 render();
 </script>
 </body>
