@@ -204,7 +204,8 @@
 
   <div class="notice">
     <b>참고</b><br>
-    · 가격은 60초마다 자동 조회합니다. <b>KIS API 설정</b> 버튼에서 한국투자 App Key·Secret을 입력하면 실시간 시세를 사용합니다. 미설정 또는 CORS 차단 시 네이버 금융 API로 자동 전환되며, 둘 다 실패하면 <b>현재가 / 전일가</b>를 직접 입력해주세요.<br>
+    · 가격은 60초마다 <b>Yahoo Finance</b>에서 자동 조회합니다 (로그인 불필요). 실패 시 네이버 금융으로 전환, 둘 다 실패하면 카드의 <b>현재가 / 전일가</b>를 직접 입력해주세요.<br>
+    · 코스피/코스닥 시장 구분은 종목 추가 시 자동으로 감지됩니다.<br>
     · <b>매수</b> 적용 시 수량·평균단가가 자동 계산됩니다.<br>
     · <b>매도</b> 적용 시 수량은 차감되고 직전 매도 수익현황이 카드에 표시됩니다.<br>
     · 종목 이름을 클릭하면 직접 수정할 수 있습니다.<br>
@@ -232,6 +233,7 @@ function loadHoldings(){
       if(!h.priceHistory) h.priceHistory=[];
       if(h.memo==null) h.memo='';
       if(!h.chartPeriod) h.chartPeriod='daily';
+      if(!('marketSuffix' in h)) h.marketSuffix=null; // 첫 조회 시 자동 감지
     });
   }catch(e){ holdings=[]; }
   render();
@@ -791,58 +793,7 @@ document.getElementById('importFile').addEventListener('change',e=>{
   reader.readAsText(file);
 });
 
-// ---------- KIS 설정 패널 ----------
-function kisUpdateToggleBtn(){
-  const {appkey} = getKisCreds();
-  const btn = document.getElementById('kisToggleBtn');
-  if(appkey){ btn.classList.add('kis-active'); btn.textContent='⚡ KIS 연결됨'; }
-  else{ btn.classList.remove('kis-active'); btn.textContent='⚡ KIS API 설정'; }
-}
-
-document.getElementById('kisToggleBtn').addEventListener('click',()=>{
-  const panel = document.getElementById('kisPanel');
-  panel.classList.toggle('open');
-  if(panel.classList.contains('open')){
-    const {appkey, appsecret} = getKisCreds();
-    if(appkey) document.getElementById('kisKey').value = appkey;
-    if(appsecret) document.getElementById('kisSecret').value = appsecret;
-  }
-});
-
-document.getElementById('kisSaveBtn').addEventListener('click', async ()=>{
-  const appkey  = document.getElementById('kisKey').value.trim();
-  const appsecret = document.getElementById('kisSecret').value.trim();
-  const msgEl = document.getElementById('kisMsg');
-  if(!appkey||!appsecret){ msgEl.className='kis-msg err'; msgEl.textContent='App Key와 App Secret을 모두 입력해주세요.'; return; }
-  msgEl.className='kis-msg'; msgEl.textContent='토큰 발급 중...';
-  try{
-    _kisToken=null; _kisTokenExp=0;
-    await getKisToken(appkey, appsecret);
-    localStorage.setItem('kisCreds', JSON.stringify({appkey, appsecret}));
-    msgEl.className='kis-msg ok'; msgEl.textContent='✓ 연결 성공 — 토큰 발급 완료';
-    kisUpdateToggleBtn();
-    refreshAll();
-  }catch(e){
-    const isCors = e instanceof TypeError && e.message.includes('fetch');
-    msgEl.className='kis-msg err';
-    msgEl.textContent = isCors
-      ? '✗ CORS 차단 — 브라우저가 직접 호출을 막고 있습니다. 네이버 API로 동작합니다.'
-      : `✗ 실패: ${e.message}`;
-  }
-});
-
-document.getElementById('kisClearBtn').addEventListener('click',()=>{
-  localStorage.removeItem('kisCreds');
-  _kisToken=null; _kisTokenExp=0;
-  document.getElementById('kisKey').value='';
-  document.getElementById('kisSecret').value='';
-  const msgEl=document.getElementById('kisMsg');
-  msgEl.className='kis-msg'; msgEl.textContent='KIS API 설정이 초기화됐습니다.';
-  kisUpdateToggleBtn();
-});
-
 // ---------- init ----------
-kisUpdateToggleBtn();
 loadHoldings();
 refreshAll();
 setInterval(refreshAll,REFRESH_MS);
