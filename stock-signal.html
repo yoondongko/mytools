@@ -666,10 +666,20 @@ function render(){
 }
 
 // ---------- 검색 ----------
-let selCode='',selName='',searchTimer=null;
+let selCode='', selName='', selSuffix=null, searchTimer=null;
+
+// 네이버 자동완성 응답의 시장 구분 → Yahoo suffix
+function marketToSuffix(m){
+  if(!m) return null;
+  const s=String(m);
+  if(s.includes('KSP')||s.includes('코스피')) return '.KS';
+  if(s.includes('KSQ')||s.includes('코스닥')) return '.KQ';
+  return null;
+}
+
 document.getElementById('inSearch').addEventListener('input',e=>{
   clearTimeout(searchTimer);
-  selCode=''; selName='';
+  selCode=''; selName=''; selSuffix=null;
   document.getElementById('addBtn').disabled=true;
   document.getElementById('selectedInfo').style.display='none';
   const q=e.target.value.trim();
@@ -682,7 +692,10 @@ async function doSearch(q){
     const res=await fetch(`https://ac.finance.naver.com/ac?q=${encodeURIComponent(q)}&q_enc=UTF-8&t_koreng=1&st=111&r_format=json&r_enc=UTF-8&r_lt=111&r_unicode=0`);
     if(!res.ok) throw new Error();
     const data=await res.json();
-    const items=(data.items||[]).slice(0,8).map(i=>({name:i[0],code:i[2]})).filter(i=>i.code);
+    // items 배열: [0]=이름, [2]=코드, [4]=시장구분(KSP/KSQ 등)
+    const items=(data.items||[]).slice(0,8)
+      .map(i=>({name:i[0], code:i[2], suffix:marketToSuffix(i[4])}))
+      .filter(i=>i.code);
     showDD(items);
   }catch(e){ showDD([],true); }
 }
@@ -690,12 +703,12 @@ function showDD(items,corsBlocked=false){
   const dd=document.getElementById('searchDropdown');
   dd.innerHTML='';
   if(corsBlocked){
-    dd.innerHTML=`<li class="search-no-result">자동검색이 안될 때 종목코드(6자리)를 직접 입력 후 선택해주세요<br><small style="color:#565C66">또는 다른 브라우저에서 열어보세요</small></li>`;
+    dd.innerHTML=`<li class="search-no-result">자동검색이 안될 때 종목코드(6자리)를 직접 입력 후 선택해주세요</li>`;
     const v=document.getElementById('inSearch').value.trim();
     if(/^\d{6}$/.test(v)){
       const li=document.createElement('li');
       li.innerHTML=`<span>코드 ${v} 직접 사용</span><span class="s-code">${v}</span>`;
-      li.addEventListener('click',()=>selectStock(v,v));
+      li.addEventListener('click',()=>selectStock(v,v,null));
       dd.appendChild(li);
     }
     dd.classList.add('open'); return;
@@ -703,16 +716,18 @@ function showDD(items,corsBlocked=false){
   if(!items.length){dd.classList.remove('open');return;}
   items.forEach(item=>{
     const li=document.createElement('li');
-    li.innerHTML=`<span>${escHtml(item.name)}</span><span class="s-code">${escHtml(item.code)}</span>`;
-    li.addEventListener('click',()=>selectStock(item.code,item.name));
+    const mktLabel = item.suffix==='.KS'?' <small style="color:#A0AABB">코스피</small>'
+                   : item.suffix==='.KQ'?' <small style="color:#A0AABB">코스닥</small>':'';
+    li.innerHTML=`<span>${escHtml(item.name)}${mktLabel}</span><span class="s-code">${escHtml(item.code)}</span>`;
+    li.addEventListener('click',()=>selectStock(item.code,item.name,item.suffix));
     dd.appendChild(li);
   });
   dd.classList.add('open');
 }
 function closeDD(){document.getElementById('searchDropdown').classList.remove('open');}
 document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))closeDD();});
-function selectStock(code,name){
-  selCode=code; selName=name;
+function selectStock(code,name,suffix){
+  selCode=code; selName=name; selSuffix=suffix;
   document.getElementById('inSearch').value=`${name} (${code})`;
   document.getElementById('selectedLabel').textContent=`${name} · ${code}`;
   document.getElementById('selectedInfo').style.display='block';
@@ -727,11 +742,12 @@ document.getElementById('addBtn').addEventListener('click',async()=>{
   const qty=document.getElementById('inQty').value.trim();
   if(!avg||!qty){alert('매입평균단가와 수량을 입력해주세요.');return;}
   holdings.push({
-    code:selCode,name:selName,displayName:selName,
-    avg:Number(avg),qty:Number(qty),
-    current:null,prev:null,manual:true,lastUpdate:null,
-    addedAt:Date.now(),lastSell:null,
-    priceHistory:[],memo:'',chartPeriod:'daily'
+    code:selCode, name:selName, displayName:selName,
+    avg:Number(avg), qty:Number(qty),
+    current:null, prev:null, manual:true, lastUpdate:null,
+    addedAt:Date.now(), lastSell:null,
+    priceHistory:[], memo:'', chartPeriod:'daily',
+    marketSuffix: selSuffix   // 코스피='.KS' / 코스닥='.KQ' / null=자동감지
   });
   saveHoldings(); render();
   document.getElementById('inSearch').value='';
@@ -739,7 +755,7 @@ document.getElementById('addBtn').addEventListener('click',async()=>{
   document.getElementById('inQty').value='';
   document.getElementById('selectedInfo').style.display='none';
   document.getElementById('addBtn').disabled=true;
-  selCode=''; selName='';
+  selCode=''; selName=''; selSuffix=null;
   refreshAll();
 });
 
